@@ -1,11 +1,18 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import AppHeader from '../components/AppHeader';
+import LiveWeatherBar from '../components/LiveWeatherBar';
+import ObservationsTable from '../components/ObservationsTable';
+import { useVayu } from '../context/VayuContext';
+import { CITY_COORDS } from '../api';
 
 export default function Dashboard() {
+  const { city, setCity, observations, lastUpdated } = useVayu();
   return (
     <>
-      <header className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div className="h-20 px-space-md flex flex-col justify-between py-space-xs"><div className="flex items-center justify-between"><div className="flex items-center gap-space-sm"><img alt="Vayu Intelligence Logo" className="h-8 w-auto object-contain" src="/vayu-logo.svg"/><div className="flex flex-col"><div className="flex items-center gap-1.5"><span className="font-headline-sm text-headline-sm text-primary font-bold tracking-tight">Vayu Intel</span><div className="relative flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-secondary"></div><div className="absolute w-3.5 h-3.5 rounded-full bg-secondary-container/40 animate-ping"></div></div></div><span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant flex items-center gap-1">Live Feed: CPCB &amp; OpenAQ</span></div></div><div className="flex items-center gap-space-sm"><div className="relative flex items-center bg-surface-container-low rounded-lg px-2 py-1"><span className="material-symbols-outlined text-[16px] text-secondary mr-1">location_city</span><select className="bg-transparent font-label-sm text-label-sm text-on-surface focus:outline-none appearance-none pr-4 cursor-pointer"><option value="delhi">Delhi NCR</option><option value="bengaluru">Bengaluru</option><option value="patna">Patna</option></select><span className="material-symbols-outlined text-[14px] text-on-surface-variant pointer-events-none absolute right-1">expand_more</span></div><button aria-label="Notifications" className="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"><span className="material-symbols-outlined text-[20px]">notifications</span></button><div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span className="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div className="flex items-center justify-between px-0.5"><div className="flex items-center gap-1.5"><span className="font-headline-sm text-headline-sm text-on-surface capitalize">Overview</span></div><div className="inline-flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-full"><span className="material-symbols-outlined text-[12px] text-secondary">info</span><span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Illustrative MVP Demo Data</span></div></div></div></header><main className="flex flex-col relative w-full pt-20 pb-24 bg-surface px-space-md"><div className="flex flex-col w-full pb-6 space-y-4">
+      <AppHeader pageTitle="Overview" />
+      <main className="flex flex-col relative w-full pt-20 pb-24 bg-surface px-space-md"><div className="flex flex-col w-full pb-6 space-y-4">
 
 <div className="flex flex-col pt-1">
 <div className="flex items-center justify-between">
@@ -21,25 +28,27 @@ export default function Dashboard() {
 
 <div className="flex flex-col space-y-2">
 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-<button className="city-btn flex-shrink-0 px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-sm transition-all flex items-center gap-1.5" data-city="delhi">
-<span className="w-2 h-2 rounded-full bg-secondary-fixed"></span>
-        Delhi NCR
-      </button>
-<button className="city-btn flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all flex items-center gap-1.5" data-city="bengaluru">
-<span className="w-2 h-2 rounded-full bg-outline-variant"></span>
-        Bengaluru
-      </button>
-<button className="city-btn flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all flex items-center gap-1.5" data-city="patna">
-<span className="w-2 h-2 rounded-full bg-outline-variant"></span>
-        Patna
-      </button>
+{Object.entries(CITY_COORDS).map(([id, c]) => (
+  <button
+    key={id}
+    onClick={() => setCity(id)}
+    className={`city-btn flex-shrink-0 px-3.5 py-1.5 rounded-full font-label-md text-label-md shadow-sm transition-all flex items-center gap-1.5 ${
+      city === id
+        ? 'bg-primary text-on-primary'
+        : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
+    }`}
+  >
+    <span className={`w-2 h-2 rounded-full ${city === id ? 'bg-secondary-fixed' : 'bg-outline-variant'}`}></span>
+    {c.label}
+  </button>
+))}
 </div>
 <div className="flex items-center justify-between px-1">
 <div className="flex items-center gap-1.5 text-on-surface-variant font-telemetry-meta text-telemetry-meta">
 <span className="material-symbols-outlined text-[13px] text-secondary">sync</span>
-<span>Updated 14 mins ago</span>
+<span>{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` : 'Fetching…'}</span>
 <span className="text-outline-variant">•</span>
-<span className="font-medium text-on-surface">38 Stations Reporting</span>
+<span className="font-medium text-on-surface">{observations.length > 0 ? `${observations.length} Readings` : '38 Stations'}</span>
 </div>
 <span className="font-telemetry-meta text-telemetry-meta text-secondary font-semibold bg-secondary-container/30 px-2 py-0.5 rounded-full">CAAQMS Live</span>
 </div>
@@ -429,6 +438,16 @@ export default function Dashboard() {
 <p className="font-telemetry-meta text-[10px] text-on-surface-variant">Illustrative MVP demo calibrated with synthetic CPCB baseline</p>
 </div>
 </div>
+
+{/* ── Live Weather Strip ── */}
+<LiveWeatherBar />
+
+{/* ── Live OpenAQ Observations ── */}
+<div className="flex flex-col space-y-1.5">
+  <span className="font-headline-sm text-headline-sm text-on-surface">Live Sensor Readings</span>
+  <ObservationsTable />
+</div>
+
 </div>
 </main><nav className="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_10px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-bold"><div className="grid grid-cols-6 items-center h-16 px-1"><Link aria-current="page" className="flex flex-col items-center justify-center h-full min-h-[44px] transition-colors text-primary font-bold" data-path="overview" to="/"><span className="material-symbols-outlined text-[22px]">dashboard</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Overview</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="stations" to="/live"><span className="material-symbols-outlined text-[22px]">sensors</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Stations</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="forecast" to="/forecast"><span className="material-symbols-outlined text-[22px]">cyclone</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Forecast</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="attribution" to="/sources"><span className="material-symbols-outlined text-[22px]">neurology</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Attribution</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="advisories" to="/alerts"><span className="material-symbols-outlined text-[22px]">warning</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Advisories</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="data-sources" to="/transparency"><span className="material-symbols-outlined text-[22px]">database</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Sources</span></Link></div></nav>
     </>

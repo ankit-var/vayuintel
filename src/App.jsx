@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { VayuProvider } from './context/VayuContext';
 import Dashboard from './pages/Dashboard';
 import LiveTelemetry from './pages/LiveTelemetry';
 import Forecast from './pages/Forecast';
@@ -8,16 +9,18 @@ import Transparency from './pages/Transparency';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/live" element={<LiveTelemetry />} />
-        <Route path="/forecast" element={<Forecast />} />
-        <Route path="/sources" element={<PollutionSource />} />
-        <Route path="/alerts" element={<Alerts />} />
-        <Route path="/transparency" element={<Transparency />} />
-      </Routes>
-    </Router>
+    <VayuProvider>
+      <Router>
+        <Routes>
+          <Route path="/"            element={<Dashboard />} />
+          <Route path="/live"        element={<LiveTelemetry />} />
+          <Route path="/forecast"    element={<Forecast />} />
+          <Route path="/sources"     element={<PollutionSource />} />
+          <Route path="/alerts"      element={<Alerts />} />
+          <Route path="/transparency" element={<Transparency />} />
+        </Routes>
+      </Router>
+    </VayuProvider>
   );
 }
 

@@ -1,11 +1,31 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import AppHeader from '../components/AppHeader';
+import { useVayu } from '../context/VayuContext';
 
 export default function Alerts() {
+  const { alerts } = useVayu();
   return (
     <>
-      <header className="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div className="h-20 px-space-md flex flex-col justify-between py-space-xs"><div className="flex items-center justify-between"><div className="flex items-center gap-space-sm"><img alt="Vayu Intelligence Logo" className="h-8 w-auto object-contain" src="/vayu-logo.svg"/><div className="flex flex-col"><div className="flex items-center gap-1.5"><span className="font-headline-sm text-headline-sm text-primary font-bold tracking-tight">Vayu Intel</span><div className="relative flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-secondary"></div><div className="absolute w-3.5 h-3.5 rounded-full bg-secondary-container/40 animate-ping"></div></div></div><span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant flex items-center gap-1">Live Feed: CPCB &amp; OpenAQ</span></div></div><div className="flex items-center gap-space-sm"><div className="relative flex items-center bg-surface-container-low rounded-lg px-2 py-1"><span className="material-symbols-outlined text-[16px] text-secondary mr-1">location_city</span><select className="bg-transparent font-label-sm text-label-sm text-on-surface focus:outline-none appearance-none pr-4 cursor-pointer"><option value="delhi">Delhi NCR</option><option value="bengaluru">Bengaluru</option><option value="patna">Patna</option></select><span className="material-symbols-outlined text-[14px] text-on-surface-variant pointer-events-none absolute right-1">expand_more</span></div><button aria-label="Notifications" className="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"><span className="material-symbols-outlined text-[20px]">notifications</span></button><div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span className="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div className="flex items-center justify-between px-0.5"><div className="flex items-center gap-1.5"><span className="font-headline-sm text-headline-sm text-on-surface capitalize">Advisories</span></div><div className="inline-flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-full"><span className="material-symbols-outlined text-[12px] text-secondary">info</span><span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Illustrative MVP Demo Data</span></div></div></div></header><main className="flex flex-col relative w-full pt-20 pb-24 bg-surface px-space-md"><div className="flex flex-col w-full gap-space-md">
+      <AppHeader pageTitle="Advisories" />
+      <main className="flex flex-col relative w-full pt-20 pb-24 bg-surface px-space-md"><div className="flex flex-col w-full gap-space-md">
+
+      {/* Live backend alerts (if any) */}
+      {alerts && alerts.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Live Backend Alerts</span>
+          {alerts.map(a => (
+            <div key={a.id} className={`p-3 rounded-xl border flex items-start gap-2.5 ${a.severity === 'CRITICAL' ? 'bg-error-container border-error' : 'bg-surface-container border-outline-variant'}`}>
+              <span className="material-symbols-outlined text-[18px] text-error flex-shrink-0">warning</span>
+              <div className="flex flex-col min-w-0">
+                <span className="font-label-md text-label-md text-on-surface font-semibold">{a.title}</span>
+                <span className="font-body-sm text-body-sm text-on-surface-variant">{a.description}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
 <div className="flex flex-col gap-1">
 <div className="flex items-center gap-2">
