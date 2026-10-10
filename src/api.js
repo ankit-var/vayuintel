@@ -17,6 +17,7 @@ async function apiFetch(path, options = {}) {
 
 export const api = {
   health: ()                    => apiFetch('/health'),
+  meta: ()                      => apiFetch('/api/meta'),
   cities: ()                    => apiFetch('/api/cities'),
   weather: (lat, lon)           => apiFetch(`/api/weather?lat=${lat}&lon=${lon}`),
   observations: (city)          => apiFetch(`/api/observations?city=${city}`),

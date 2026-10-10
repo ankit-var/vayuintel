@@ -10,13 +10,15 @@ export function VayuProvider({ children }) {
   const [alerts, setAlerts] = useState([]);
   const [forecasts, setForecasts] = useState([]);
   const [intelligence, setIntelligence] = useState(null);
+  const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [backendOnline, setBackendOnline] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Ping backend health
+  // Ping backend health and metadata
   useEffect(() => {
     api.health().then(h => setBackendOnline(h?.status === 'ok'));
+    api.meta().then(m => { if (m) setMeta(m); });
   }, []);
 
   const refresh = useCallback(async () => {
@@ -48,6 +50,7 @@ export function VayuProvider({ children }) {
     <VayuContext.Provider value={{
       city, setCity,
       weather, observations, alerts, forecasts, intelligence,
+      meta,
       loading, backendOnline, lastUpdated,
       refresh,
       coords: CITY_COORDS[city],
