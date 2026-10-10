@@ -147,18 +147,9 @@ export default function Dashboard() {
 </div>
 
 <div className="bg-surface-container-lowest rounded-xl p-3 shadow-sm flex flex-col space-y-3">
-<div className="flex items-center justify-between">
-<div className="flex items-center gap-2">
+<div className="flex items-center gap-2 mb-1">
 <span className="material-symbols-outlined text-primary text-[20px]">map</span>
 <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">Spatial Hotspots</h2>
-</div>
-<div className="flex items-center gap-1 bg-surface-container-low rounded-lg p-0.5">
-<button className="px-2 py-0.5 rounded bg-surface-container-lowest text-primary font-label-sm text-label-sm shadow-xs font-medium">AQI</button>
-<button className="px-2 py-0.5 rounded text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm font-medium">PM2.5</button>
-<button className="px-2 py-0.5 rounded text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm font-medium flex items-center gap-0.5">
-<span className="material-symbols-outlined text-[12px]">air</span> Wind
-        </button>
-</div>
 </div>
 
 <SpatialHotspotsMap />
