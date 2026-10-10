@@ -3,8 +3,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import LiveWeatherBar from '../components/LiveWeatherBar';
+import { useVayu } from '../context/VayuContext';
 
 export default function Forecast() {
+  const { forecasts } = useVayu();
+  
+  const preds = forecasts?.predictions || [];
+  const peak = preds.length ? Math.max(...preds.map(p => p.aqi_projected)) : 418;
+  const peakTimeObj = preds.find(p => p.aqi_projected === peak);
+  const peakTime = peakTimeObj ? new Date(peakTimeObj.timestamp).toLocaleTimeString('en-IN', {hour: '2-digit', minute:'2-digit'}) : 'Tomorrow, 06:30 AM';
+
   return (
     <>
       <AppHeader pageTitle="Forecast" />
@@ -33,13 +41,13 @@ export default function Forecast() {
 </div>
 <span className="bg-error text-on-error font-telemetry-meta text-telemetry-meta font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
 <span className="w-1.5 h-1.5 rounded-full bg-surface-container-lowest animate-ping"></span>
-        CPCB SEVERE
+        {peak > 400 ? 'CPCB SEVERE' : peak > 300 ? 'VERY POOR' : peak > 200 ? 'POOR' : 'MODERATE'}
       </span>
 </div>
 <div className="flex items-baseline gap-2 mb-1">
-<span className="font-telemetry-num text-[38px] leading-none text-on-surface font-bold tracking-tight">418</span>
+<span className="font-telemetry-num text-[38px] leading-none text-on-surface font-bold tracking-tight">{peak}</span>
 <span className="font-label-md text-label-md text-error font-semibold">AQI Peak</span>
-<span className="font-body-sm text-body-sm text-on-surface-variant ml-auto text-right">Tomorrow, 06:30 AM</span>
+<span className="font-body-sm text-body-sm text-on-surface-variant ml-auto text-right">{peakTime}</span>
 </div>
 
 <div className="bg-surface-container-low rounded-lg p-space-sm mt-3 flex items-start gap-2.5">

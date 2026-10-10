@@ -5,22 +5,47 @@ import AppHeader from '../components/AppHeader';
 import { useVayu } from '../context/VayuContext';
 
 export default function Alerts() {
-  const { alerts } = useVayu();
+  const { alerts, loading, city } = useVayu();
+  const criticalAlert = alerts?.find(a => a.severity === 'CRITICAL' && !a.is_predicted);
+  const predictedAlert = alerts?.find(a => a.severity === 'CRITICAL' && a.is_predicted);
+  const allAlerts = alerts || [];
   return (
     <>
       <AppHeader pageTitle="Advisories" />
       <main className="flex flex-col relative w-full pt-20 pb-24 bg-surface px-space-md"><div className="flex flex-col w-full gap-space-md">
 
-      {/* Live backend alerts (if any) */}
-      {alerts && alerts.length > 0 && (
+      {/* Live backend alerts */}
+      {loading && (
+        <div className="flex items-center gap-2 py-2 text-on-surface-variant font-body-sm text-body-sm">
+          <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span>
+          Loading live alerts…
+        </div>
+      )}
+
+      {!loading && allAlerts.length === 0 && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-surface-container border border-outline-variant">
+          <span className="material-symbols-outlined text-[18px] text-secondary">check_circle</span>
+          <span className="font-body-sm text-body-sm text-on-surface-variant">No active alerts for {city}. Air quality is within safe limits.</span>
+        </div>
+      )}
+
+      {!loading && allAlerts.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Live Backend Alerts</span>
-          {alerts.map(a => (
-            <div key={a.id} className={`p-3 rounded-xl border flex items-start gap-2.5 ${a.severity === 'CRITICAL' ? 'bg-error-container border-error' : 'bg-surface-container border-outline-variant'}`}>
-              <span className="material-symbols-outlined text-[18px] text-error flex-shrink-0">warning</span>
-              <div className="flex flex-col min-w-0">
+          {allAlerts.map(a => (
+            <div key={a.id} className={`p-3 rounded-xl border flex items-start gap-2.5 ${
+              a.severity === 'CRITICAL' ? 'bg-error-container border-error' : 'bg-surface-container border-outline-variant'
+            }`}>
+              <span className={`material-symbols-outlined text-[18px] flex-shrink-0 ${
+                a.severity === 'CRITICAL' ? 'text-error' : 'text-secondary'
+              }`}>warning</span>
+              <div className="flex flex-col min-w-0 gap-0.5">
                 <span className="font-label-md text-label-md text-on-surface font-semibold">{a.title}</span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant">{a.description}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="font-telemetry-meta text-telemetry-meta text-outline">
+                    {a.is_predicted ? '⚡ Predicted' : '📡 Measured'} · {a.data_source}
+                  </span>
+                </div>
               </div>
             </div>
           ))}
@@ -39,68 +64,57 @@ export default function Alerts() {
     </p>
 </div>
 
+{criticalAlert ? (
 <div className="relative overflow-hidden rounded-xl bg-error-container text-on-error-container shadow-md p-space-md flex flex-col gap-space-sm">
-
 <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-error/15 blur-2xl pointer-events-none"></div>
-
 <div className="flex items-center justify-between z-10">
 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error text-on-error shadow-sm">
 <span className="w-2 h-2 rounded-full bg-on-error animate-ping"></span>
-<span className="font-label-sm text-label-sm uppercase tracking-wider font-bold">Active GRAP III Enacted</span>
+<span className="font-label-sm text-label-sm uppercase tracking-wider font-bold">Active Alert · {criticalAlert.data_source}</span>
 </div>
 <span className="font-telemetry-meta text-telemetry-meta text-on-error-container opacity-80 flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">schedule</span> Tonight 22:00 – Tomorrow 11:00 IST
+<span className="material-symbols-outlined text-[14px]">schedule</span> Active until {new Date(criticalAlert.active_until).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}
       </span>
 </div>
-
 <div className="flex flex-col gap-1 z-10">
-<h2 className="font-headline-sm text-headline-sm font-bold text-on-error-container leading-snug">
-        CRITICAL EARLY WARNING: Severe Air Inversion Expected
-      </h2>
-<p className="font-body-sm text-body-sm text-on-error-container opacity-90">
-        Thermal boundary-layer collapse will concentrate surface aerosols overnight across critical NCR hotspots.
-      </p>
+<h2 className="font-headline-sm text-headline-sm font-bold text-on-error-container leading-snug">{criticalAlert.title}</h2>
+<p className="font-body-sm text-body-sm text-on-error-container opacity-90">{criticalAlert.description}</p>
 </div>
-
 <div className="grid grid-cols-2 gap-space-xs z-10 bg-surface-container-lowest/70 backdrop-blur-sm rounded-lg p-space-sm">
 <div className="flex flex-col">
-<span className="font-label-sm text-label-sm text-on-surface-variant">Predicted Peak AQI</span>
+<span className="font-label-sm text-label-sm text-on-surface-variant">Current AQI (Measured)</span>
 <div className="flex items-baseline gap-1 mt-0.5">
-<span className="font-telemetry-num text-telemetry-num text-error font-bold">390-430</span>
-<span className="font-telemetry-meta text-telemetry-meta text-error font-medium">Severe+</span>
+<span className="font-telemetry-num text-telemetry-num text-error font-bold">{criticalAlert.evidence?.match(/\d+/)?.[0] || '—'}</span>
 </div>
 </div>
 <div className="flex flex-col">
-<span className="font-label-sm text-label-sm text-on-surface-variant">Primary Driver</span>
+<span className="font-label-sm text-label-sm text-on-surface-variant">Prominent Pollutant</span>
 <div className="flex items-center gap-1 mt-1">
-<span className="material-symbols-outlined text-[16px] text-error">cloud_download</span>
-<span className="font-label-md text-label-md text-on-surface font-semibold">Low Wind (&lt;2.1 m/s)</span>
+<span className="font-label-md text-label-md text-on-surface font-semibold">{criticalAlert.evidence?.split('Prominent: ')?.[1] || criticalAlert.evidence}</span>
 </div>
 </div>
 </div>
-
-<div className="flex flex-col gap-1 z-10">
-<span className="font-label-sm text-label-sm text-on-error-container font-semibold uppercase tracking-wider flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">location_on</span> High Impact Hotspots
-      </span>
-<div className="flex flex-wrap gap-1.5">
-<span className="px-2 py-0.5 rounded-full bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Anand Vihar</span>
-<span className="px-2 py-0.5 rounded-full bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Jahangirpuri</span>
-<span className="px-2 py-0.5 rounded-full bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Wazirpur</span>
-<span className="px-2 py-0.5 rounded-full bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm font-medium">Vivek Vihar</span>
-</div>
-</div>
-
 <div className="flex flex-col gap-1 z-10 bg-error/10 rounded-lg p-2.5">
 <div className="flex items-center gap-1.5 text-on-error-container">
-<span className="material-symbols-outlined text-[16px]">gavel</span>
-<span className="font-label-sm text-label-sm font-bold uppercase tracking-wide">CAQM Enforced Mandate</span>
+<span className="material-symbols-outlined text-[16px]">health_and_safety</span>
+<span className="font-label-sm text-label-sm font-bold uppercase tracking-wide">Health Advisory</span>
 </div>
 <p className="font-body-sm text-body-sm text-on-error-container opacity-90 leading-tight">
-        BS-III Petrol &amp; BS-IV Diesel 4-wheelers restricted from transit. Non-essential C&amp;D (construction &amp; demolition) halted until inversion lifts.
-      </p>
+  Consult official CPCB / local authority advisories for restrictions. Sensitive groups should limit outdoor exposure.
+</p>
 </div>
 </div>
+) : (
+<div className="relative overflow-hidden rounded-xl bg-surface-container text-on-surface shadow-md p-space-md flex flex-col gap-space-sm">
+<div className="flex items-center gap-2">
+<span className="material-symbols-outlined text-[20px] text-secondary">check_circle</span>
+<span className="font-headline-sm text-headline-sm font-bold text-on-surface">No Critical Alerts</span>
+</div>
+<p className="font-body-sm text-body-sm text-on-surface-variant">
+  Current measured AQI does not meet the threshold for a critical health alert. Monitor updates and consult official CPCB advisories for any regulatory actions.
+</p>
+</div>
+)}
 
 <div className="relative rounded-xl overflow-hidden shadow-sm h-32 bg-surface-container">
 <img className="w-full h-full object-cover" data-alt="Dense atmospheric haze and winter smog blanket over urban city road infrastructure in Delhi NCR during dawn, dramatic streetlights penetrating deep aerosol haze, environmental intelligence surveillance viewpoint, documentary photojournalism style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwPJ4IJ891QwFi29fAbh9n6e8S2S7l6ypm4ebbroGwUR6UvTI6nSNetJzzP2hu7CtrtHVD3waIFLkeJ2bs5J7LrWNbUT0wvUTOHVQh38QHjY8_Uq3AUAz3j6ubzd6KcifE1em30Zq-lM_nn3_MgB--x4dQngvIhuyy_XbXsIHFm98ZLBstqOFlw84UmKEuFNiOLq1JF4ecspelr32gcMXG1PyQAEo3mwFo_LkhE19EFOY92cCJkPFx"/>

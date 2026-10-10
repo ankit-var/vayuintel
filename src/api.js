@@ -22,6 +22,7 @@ export const api = {
   observations: (city)          => apiFetch(`/api/observations?city=${city}`),
   alerts: (city)                => apiFetch(`/api/alerts?city=${city}`),
   forecasts: (city)             => apiFetch(`/api/forecasts?city=${city}`),
+  intelligence: (city)          => apiFetch(`/api/intelligence?city=${city}`),
 };
 
 // city coordinate lookup (mirrors backend)

@@ -2,8 +2,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
+import { useVayu } from '../context/VayuContext';
 
 export default function PollutionSource() {
+  const { intelligence, loading } = useVayu();
+  const measuredFacts = intelligence?.measured_facts || (loading ? 'Loading measured data…' : 'No observation data available.');
+  const weatherContext = intelligence?.weather_context || (loading ? 'Loading weather context…' : 'Weather data unavailable.');
+  const sourceHypotheses = intelligence?.source_hypotheses || (loading ? 'Loading…' : 'Unable to generate source hypotheses without measurements.');
+  const dataQuality = intelligence?.data_quality || 'Data source: OpenAQ (Demonstration MVP)';
   return (
     <>
       <AppHeader pageTitle="Attribution" />
@@ -26,11 +32,11 @@ export default function PollutionSource() {
 </div>
 <div className="flex flex-col space-y-1">
 <div className="flex items-center gap-1.5">
-<span className="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold">CPCB Methodology Integrity</span>
+<span className="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold">Measured Facts</span>
 <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
 </div>
 <p className="font-body-sm text-body-sm text-on-surface leading-relaxed">
-<strong className="font-semibold text-primary">Important Notice:</strong> Ground stations measure total pollutant concentration. Source attributions below are scientific model approximations using chemical transport models and satellite thermal anomalies — never treated as certified ground truth.
+{measuredFacts}
         </p>
 </div>
 </div>
@@ -39,16 +45,20 @@ export default function PollutionSource() {
 <div className="rounded-xl p-space-md bg-surface-container-lowest text-on-surface shadow-sm space-y-space-md">
 <div className="flex items-center justify-between">
 <div>
-<h3 className="font-headline-sm text-headline-sm text-on-surface">Chemical Mass Balance</h3>
-<p className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Model Run: GEOS-Chem • 06:00 IST Composite</p>
+<h3 className="font-headline-sm text-headline-sm text-on-surface">Weather Context &amp; Dispersion</h3>
+<p className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">{dataQuality}</p>
 </div>
-<span className="px-2.5 py-1 rounded-full bg-surface-container font-telemetry-meta text-telemetry-meta text-secondary font-semibold">Simulated Model</span>
+<span className="px-2.5 py-1 rounded-full bg-surface-container font-telemetry-meta text-telemetry-meta text-secondary font-semibold">Live Data</span>
 </div>
 
 <div className="space-y-2">
+<p className="font-body-sm text-body-sm text-on-surface leading-relaxed">{weatherContext}</p>
+</div>
+
+<div className="space-y-2 pt-2">
 <div className="flex justify-between items-center font-label-sm text-label-sm text-on-surface-variant">
-<span>Source Contribution Partition</span>
-<span className="font-telemetry-meta text-telemetry-meta">100% Attribution Target</span>
+<span>Illustrative Source Partition <span className="text-outline italic">(Simulated — not validated)</span></span>
+<span className="font-telemetry-meta text-telemetry-meta">100% Attribution</span>
 </div>
 <div className="h-3 w-full rounded-full bg-surface-container overflow-hidden flex shadow-inner">
 <div className="bg-primary h-full transition-all duration-500" style={{"width":"34%"}} title="Vehicular: 34%"></div>
@@ -66,7 +76,16 @@ export default function PollutionSource() {
 </div>
 </div>
 
+
 <div className="space-y-space-sm pt-1">
+
+<div className="p-3 rounded-lg bg-surface-container-low transition-colors hover:bg-surface-container flex flex-col space-y-1.5">
+<div className="flex items-center gap-2">
+<span className="material-symbols-outlined text-[18px] text-primary">science</span>
+<span className="font-label-lg text-label-lg text-on-surface font-semibold">Source Hypotheses</span>
+</div>
+<p className="font-body-sm text-body-sm text-on-surface-variant leading-snug">{sourceHypotheses}</p>
+</div>
 
 <div className="p-3 rounded-lg bg-surface-container-low transition-colors hover:bg-surface-container flex flex-col space-y-1.5">
 <div className="flex items-center justify-between">
