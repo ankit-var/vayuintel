@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import LiveWeatherBar from '../components/LiveWeatherBar';
 import ObservationsTable from '../components/ObservationsTable';
+import SpatialHotspotsMap from '../components/SpatialHotspotsMap';
 import { useVayu } from '../context/VayuContext';
 import { CITY_COORDS } from '../api';
 
@@ -160,71 +161,7 @@ export default function Dashboard() {
 </div>
 </div>
 
-<div className="relative w-full h-64 rounded-xl overflow-hidden bg-surface-container">
-<div className="w-full h-full bg-cover bg-center" data-location="Delhi, India" style={{"backgroundImage":"url('https://lh3.googleusercontent.com/aida-public/AB6AXuCv4qfIZzMWIhtwOjQpsnA8_9EGyVCRr-RDolUE1tGLFHKf5anLaUuHRUMWgGDlSbWcG0U6RDPNonLzQOsVnobghdKEMfo6eeZbxYIc5QJdCbK1fM3ko-DiENGcpwcy6AgnPaOXs_jqB6trkLwM5e1IB5qYvGVAiDMHjLixt_l4hGh6JrflVgY-wVdR40IafBXRcZ0VELIEPc-5Y-fur2buykIT4ObJbEppxchxQQRZuLWE3Y59qH8K')"}}></div>
-
-<div className="absolute inset-0 bg-gradient-to-t from-inverse-surface/80 via-transparent to-inverse-surface/20 pointer-events-none"></div>
-
-<div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
-<button aria-label="Zoom In" className="w-7 h-7 rounded-lg bg-surface-container-lowest/90 backdrop-blur-md text-on-surface flex items-center justify-center shadow-sm active:scale-95 transition-transform">
-<span className="material-symbols-outlined text-[16px]">add</span>
-</button>
-<button aria-label="Zoom Out" className="w-7 h-7 rounded-lg bg-surface-container-lowest/90 backdrop-blur-md text-on-surface flex items-center justify-center shadow-sm active:scale-95 transition-transform">
-<span className="material-symbols-outlined text-[16px]">remove</span>
-</button>
-</div>
-
-<div className="absolute top-[28%] right-[18%] z-20 flex flex-col items-center cursor-pointer group">
-<div className="relative flex items-center justify-center">
-<span className="absolute w-8 h-8 rounded-full bg-error-container/80 animate-ping"></span>
-<span className="w-4 h-4 rounded-full bg-error shadow-md border-2 border-surface-container-lowest"></span>
-</div>
-<div className="mt-1 bg-surface-container-lowest/95 backdrop-blur-sm px-2 py-0.5 rounded shadow-sm text-center">
-<span className="font-label-sm text-[10px] text-on-surface font-bold block leading-none">Anand Vihar</span>
-<span className="font-telemetry-meta text-telemetry-meta text-error font-bold leading-tight">422 Severe</span>
-</div>
-</div>
-
-<div className="absolute top-[45%] left-[52%] z-20 flex flex-col items-center cursor-pointer group">
-<span className="w-3.5 h-3.5 rounded-full bg-error shadow border-2 border-surface-container-lowest"></span>
-<div className="mt-0.5 bg-surface-container-lowest/90 backdrop-blur-sm px-1.5 py-0.5 rounded shadow-sm text-center">
-<span className="font-label-sm text-[9px] text-on-surface font-semibold block leading-none">ITO</span>
-<span className="font-telemetry-meta text-[10px] text-error font-semibold leading-tight">356</span>
-</div>
-</div>
-
-<div className="absolute top-[62%] left-[34%] z-20 flex flex-col items-center cursor-pointer group">
-<span className="w-3.5 h-3.5 rounded-full bg-error shadow border-2 border-surface-container-lowest"></span>
-<div className="mt-0.5 bg-surface-container-lowest/90 backdrop-blur-sm px-1.5 py-0.5 rounded shadow-sm text-center">
-<span className="font-label-sm text-[9px] text-on-surface font-semibold block leading-none">RK Puram</span>
-<span className="font-telemetry-meta text-[10px] text-error font-semibold leading-tight">324</span>
-</div>
-</div>
-
-<div className="absolute bottom-[20%] left-[16%] z-20 flex flex-col items-center cursor-pointer group">
-<span className="w-3 h-3 rounded-full bg-surface-tint shadow border-2 border-surface-container-lowest"></span>
-<div className="mt-0.5 bg-surface-container-lowest/90 backdrop-blur-sm px-1.5 py-0.5 rounded shadow-sm text-center">
-<span className="font-label-sm text-[9px] text-on-surface font-semibold block leading-none">IGI T3</span>
-<span className="font-telemetry-meta text-[10px] text-primary font-semibold leading-tight">268</span>
-</div>
-</div>
-
-<div className="absolute bottom-[35%] right-[36%] z-20 flex flex-col items-center cursor-pointer group">
-<span className="w-3 h-3 rounded-full bg-secondary shadow border-2 border-surface-container-lowest"></span>
-<div className="mt-0.5 bg-surface-container-lowest/90 backdrop-blur-sm px-1.5 py-0.5 rounded shadow-sm text-center">
-<span className="font-label-sm text-[9px] text-on-surface font-semibold block leading-none">Lodhi Rd</span>
-<span className="font-telemetry-meta text-[10px] text-secondary font-semibold leading-tight">195</span>
-</div>
-</div>
-
-<div className="absolute bottom-2 left-2 right-2 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg shadow-sm flex items-center justify-between">
-<div className="flex items-center gap-1.5">
-<span className="material-symbols-outlined text-secondary text-[16px]">navigation</span>
-<span className="font-telemetry-meta text-telemetry-meta text-on-surface">Surface Wind: NW 4.2 km/h</span>
-</div>
-<span className="font-label-sm text-label-sm text-on-surface-variant">Tap sensor to inspect</span>
-</div>
-</div>
+<SpatialHotspotsMap />
 
 <div className="flex flex-col space-y-1.5 pt-1">
 <div className="flex items-center justify-between text-on-surface-variant font-label-sm text-[10px]">
