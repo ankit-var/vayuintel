@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40" role="img" aria-label="Vayu Intel Logo">
+  <defs>
+    <!-- Deep forest green gradient — matches brand primary #003527 -->
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#006a61"/>
+      <stop offset="100%" stop-color="#003527"/>
+    </linearGradient>
+    <!-- Wind-arc gradient for the motion streaks -->
+    <linearGradient id="windGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#95d3ba" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#006a61" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── Icon: leaf + wind-flow mark ── -->
+  <g transform="translate(4, 4)">
+    <!-- Leaf body — a teardrop pointing upper-right -->
+    <path
+      d="M 16 24 C 6 20 4 10 12 4 C 20 4 24 10 20 18 Z"
+      fill="url(#leafGrad)"
+    />
+    <!-- Leaf mid-vein -->
+    <line x1="16" y1="24" x2="15" y2="7" stroke="#b0f0d6" stroke-width="1" stroke-linecap="round" opacity="0.7"/>
+    <!-- Wind streaks to the right of the leaf — 3 arcs of varying length -->
+    <path d="M 22 10 Q 27 8 30 10" fill="none" stroke="url(#windGrad)" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M 22 14 Q 29 12 34 14" fill="none" stroke="url(#windGrad)" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M 22 18 Q 27 16 30 18" fill="none" stroke="url(#windGrad)" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+
+  <!-- ── Wordmark: VAYU INTEL ── -->
+  <!-- "VAYU" — bold, primary green -->
+  <text
+    x="42" y="24"
+    font-family="'Plus Jakarta Sans', 'Inter', sans-serif"
+    font-size="16"
+    font-weight="800"
+    letter-spacing="-0.3"
+    fill="#003527"
+  >VAYU</text>
+  <!-- "INTEL" — lighter weight, teal secondary -->
+  <text
+    x="88" y="24"
+    font-family="'Plus Jakarta Sans', 'Inter', sans-serif"
+    font-size="16"
+    font-weight="500"
+    letter-spacing="0.2"
+    fill="#006a61"
+  >INTEL</text>
+
+  <!-- Thin separator dot between words -->
+  <circle cx="85" cy="20" r="1.5" fill="#95d3ba"/>
+
+  <!-- Baseline rule under the wordmark — subtle brand line -->
+  <line x1="42" y1="27" x2="119" y2="27" stroke="#b0f0d6" stroke-width="0.75" opacity="0.7"/>
+</svg>
