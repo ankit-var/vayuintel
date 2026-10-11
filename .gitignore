@@ -8,6 +8,15 @@ dist/
 dist-ssr/
 build/
 
+# ── Python ────────────────────────────────────────────
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
 # ── Vite cache ────────────────────────────────────────
 .vite/
 *.local
