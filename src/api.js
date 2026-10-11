@@ -1,5 +1,9 @@
 // Central API service — all backend calls go through here
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const RENDER_BACKEND_URL = 'https://vayu-backend-oe9z.onrender.com';
+const resolvedUrl = import.meta.env.VITE_API_URL
+  || import.meta.env.VITE_API_BASE_URL
+  || (import.meta.env.DEV ? 'http://localhost:8000' : RENDER_BACKEND_URL);
+const BASE_URL = (resolvedUrl || RENDER_BACKEND_URL).replace(/\/+$/, '');
 
 async function apiFetch(path, options = {}) {
   try {
