@@ -1,21 +1,39 @@
 
-import { useState } from "react";
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from "react";
+import AppNav from '../components/AppNav';
 import AppHeader from '../components/AppHeader';
 import { useVayu } from '../context/VayuContext';
+import { computeCityAverages } from '../utils/dataUtils';
 
 export default function Alerts() {
-  const { alerts, loading, city } = useVayu();
-  const criticalAlert = alerts?.find(a => a.severity === 'CRITICAL' && !a.is_predicted);
-  const allAlerts = alerts || [];
+  const { alerts, observations, loading, city } = useVayu();
+  const [dismissedAlertIds, setDismissedAlertIds] = useState([]);
   // C-1: Advisory tab state
   const [activeTab, setActiveTab] = useState('citizens');
   // C-2: Exposure slider state
   const [sliderMinutes, setSliderMinutes] = useState(45);
+
+  const averages = useMemo(() => computeCityAverages(observations), [observations]);
+  const ambientPm25 = averages.pm25; // live city average PM2.5
+
   // Approximate: inhaled µg = ambient PM2.5 conc * minutes * lung deposition factor
-  const ambientPm25 = 188; // demo value (µg/m³)
-  const inhaledMcg = Math.round(ambientPm25 * sliderMinutes * 0.034);
-  const cigEq = (inhaledMcg / 156).toFixed(1); // 1 cigarette ≈ 156 µg retained PM2.5
+  const inhaledMcg = ambientPm25 != null ? Math.round(ambientPm25 * sliderMinutes * 0.034) : null;
+  const cigEq = inhaledMcg != null ? (inhaledMcg / 156).toFixed(1) : null; // 1 cigarette ≈ 156 µg retained PM2.5
+
+  const allAlerts = useMemo(() => {
+    return Array.isArray(alerts) ? alerts : [];
+  }, [alerts]);
+
+  const visibleAlerts = useMemo(() => {
+    return allAlerts.filter(a => !dismissedAlertIds.includes(a.id));
+  }, [allAlerts, dismissedAlertIds]);
+
+  const criticalAlert = visibleAlerts.find(a => a.severity === 'CRITICAL' && !a.is_predicted);
+
+  const handleDismiss = (id) => {
+    setDismissedAlertIds(prev => [...prev, id]);
+  };
+
   return (
     <>
       <AppHeader pageTitle="Advisories" />
@@ -23,29 +41,44 @@ export default function Alerts() {
 
       {/* Live backend alerts */}
       {loading && (
-        <div className="flex items-center gap-2 py-2 text-on-surface-variant font-body-sm text-body-sm">
+        <div className="flex items-center gap-2 py-2 text-on-surface-variant font-body-sm text-body-sm" role="status" aria-live="polite">
           <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span>
           Loading live alerts…
         </div>
       )}
 
-      {!loading && allAlerts.length === 0 && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-surface-container border border-outline-variant">
-          <span className="material-symbols-outlined text-[18px] text-secondary">check_circle</span>
-          <span className="font-body-sm text-body-sm text-on-surface-variant">No active alerts for {city}. Air quality is within safe limits.</span>
+      {!loading && visibleAlerts.length === 0 && (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-surface-container border border-outline-variant" role="status">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-secondary">check_circle</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              {allAlerts.length > 0 && dismissedAlertIds.length > 0
+                ? 'All current alerts dismissed.'
+                : `No active alerts for ${city}. Air quality is within safe limits.`}
+            </span>
+          </div>
+          {dismissedAlertIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDismissedAlertIds([])}
+              className="min-h-[44px] min-w-[44px] px-2 text-xs font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary flex items-center justify-center"
+            >
+              Reset
+            </button>
+          )}
         </div>
       )}
 
-      {!loading && allAlerts.length > 0 && (
+      {!loading && visibleAlerts.length > 0 && (
         <div className="flex flex-col gap-2">
-          {allAlerts.map(a => (
+          {visibleAlerts.map(a => (
             <div key={a.id} className={`p-3 rounded-xl border flex items-start gap-2.5 ${
               a.severity === 'CRITICAL' ? 'bg-error-container border-error' : 'bg-surface-container border-outline-variant'
             }`}>
-              <span className={`material-symbols-outlined text-[18px] flex-shrink-0 ${
+              <span className={`material-symbols-outlined text-[18px] flex-shrink-0 mt-0.5 ${
                 a.severity === 'CRITICAL' ? 'text-error' : 'text-secondary'
               }`}>warning</span>
-              <div className="flex flex-col min-w-0 gap-0.5">
+              <div className="flex flex-col min-w-0 flex-1 gap-0.5">
                 <span className="font-label-md text-label-md text-on-surface font-semibold">{a.title}</span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant">{a.description}</span>
                 <div className="flex items-center gap-2 mt-1">
@@ -54,6 +87,15 @@ export default function Alerts() {
                   </span>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => handleDismiss(a.id)}
+                aria-label={`Dismiss alert: ${a.title}`}
+                title="Dismiss alert"
+                className="text-on-surface-variant hover:text-on-surface min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2 -mt-1 p-2 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
             </div>
           ))}
         </div>
@@ -146,33 +188,41 @@ export default function Alerts() {
 <span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Adaptive Guidance</span>
 </div>
 
-<div className="flex overflow-x-auto gap-1 bg-surface-container p-1 rounded-xl scrollbar-none" id="advisoryTabs" role="tablist">
+<div className="flex overflow-x-auto gap-1 bg-surface-container p-1 rounded-xl scrollbar-none" id="advisoryTabs" role="tablist" aria-label="Targeted health action categories">
 <button
   role="tab"
+  id="tab-citizens"
+  aria-controls="panel-citizens"
   aria-selected={activeTab === 'citizens'}
   onClick={() => setActiveTab('citizens')}
-  className={`advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-semibold transition-all duration-150 ${activeTab === 'citizens' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
+  className={`advisory-tab flex-1 whitespace-nowrap min-w-max min-h-[44px] px-3.5 py-2.5 rounded-lg font-label-md text-label-md font-semibold transition-all duration-150 focus-visible:outline-2 focus-visible:outline-primary ${activeTab === 'citizens' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
         Citizens &amp; Families
       </button>
 <button
   role="tab"
+  id="tab-workers"
+  aria-controls="panel-workers"
   aria-selected={activeTab === 'workers'}
   onClick={() => setActiveTab('workers')}
-  className={`advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 ${activeTab === 'workers' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
+  className={`advisory-tab flex-1 whitespace-nowrap min-w-max min-h-[44px] px-3.5 py-2.5 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-primary ${activeTab === 'workers' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
         Outdoor &amp; Police
       </button>
 <button
   role="tab"
+  id="tab-schools"
+  aria-controls="panel-schools"
   aria-selected={activeTab === 'schools'}
   onClick={() => setActiveTab('schools')}
-  className={`advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 ${activeTab === 'schools' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
+  className={`advisory-tab flex-1 whitespace-nowrap min-w-max min-h-[44px] px-3.5 py-2.5 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-primary ${activeTab === 'schools' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
         Schools &amp; Labs
       </button>
 <button
   role="tab"
+  id="tab-municipal"
+  aria-controls="panel-municipal"
   aria-selected={activeTab === 'municipal'}
   onClick={() => setActiveTab('municipal')}
-  className={`advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 ${activeTab === 'municipal' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
+  className={`advisory-tab flex-1 whitespace-nowrap min-w-max min-h-[44px] px-3.5 py-2.5 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-primary ${activeTab === 'municipal' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
         Municipal (DPCC)
       </button>
 </div>
@@ -360,8 +410,13 @@ export default function Alerts() {
 <span className="font-telemetry-num text-[16px] text-primary font-bold">{sliderMinutes} Mins</span>
 </div>
 <input
-  className="w-full accent-primary h-2 bg-surface-container rounded-lg cursor-pointer"
+  className="w-full accent-primary h-2 bg-surface-container rounded-lg cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
   id="exposureSlider"
+  aria-label="Planned outdoor exposure duration in minutes"
+  aria-valuemin="15"
+  aria-valuemax="180"
+  aria-valuenow={sliderMinutes}
+  aria-valuetext={`${sliderMinutes} minutes`}
   max="180" min="15" step="15"
   type="range"
   value={sliderMinutes}
@@ -377,11 +432,19 @@ export default function Alerts() {
 <div className="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest mt-1">
 <div className="flex flex-col">
 <span className="font-label-sm text-label-sm text-on-surface-variant">Estimated PM2.5 Inhaled</span>
-<span className="font-telemetry-num text-[18px] font-bold text-error">~ {inhaledMcg} µg</span>
+<span className="font-telemetry-num text-[18px] font-bold text-error">
+  {inhaledMcg != null ? `~ ${inhaledMcg} µg` : '— (No PM2.5)'}
+</span>
+<span className="font-telemetry-meta text-[10px] text-on-surface-variant">
+  {ambientPm25 != null ? `Based on ${ambientPm25.toFixed(1)} µg/m³ city avg` : 'Awaiting sensor reading'}
+</span>
 </div>
 <div className="flex flex-col items-end">
 <span className="font-label-sm text-label-sm text-on-surface-variant">Cigarette Equivalence</span>
-<span className="font-telemetry-num text-[18px] font-bold text-on-surface">~ {cigEq} Cigs</span>
+<span className="font-telemetry-num text-[18px] font-bold text-on-surface">
+  {cigEq != null ? `~ ${cigEq} Cigs` : '—'}
+</span>
+<span className="font-telemetry-meta text-[10px] text-on-surface-variant">1 cig ≈ 156 µg retained</span>
 </div>
 </div>
 </div>
@@ -469,8 +532,8 @@ export default function Alerts() {
 <span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Report illegal waste fires: 1800-180-1717</span>
 </div>
 </div>
-<a href="tel:18001801717" className="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1 shadow-sm">
-<span className="material-symbols-outlined text-[14px]">call</span> Dial
+<a href="tel:18001801717" aria-label="Dial Sameer Pollution Helpline 1800-180-1717" className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+<span className="material-symbols-outlined text-[16px]">call</span> Dial
     </a>
 </div>
 
@@ -481,7 +544,8 @@ export default function Alerts() {
     </p>
 </div>
 </div>
-</main><nav className="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_10px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-bold"><div className="grid grid-cols-6 items-center h-16 px-1"><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="overview" to="/"><span className="material-symbols-outlined text-[22px]">dashboard</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Overview</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="stations" to="/live"><span className="material-symbols-outlined text-[22px]">sensors</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Stations</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="forecast" to="/forecast"><span className="material-symbols-outlined text-[22px]">cyclone</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Forecast</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="attribution" to="/sources"><span className="material-symbols-outlined text-[22px]">neurology</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Attribution</span></Link><Link aria-current="page" className="flex flex-col items-center justify-center h-full min-h-[44px] transition-colors text-primary font-bold" data-path="advisories" to="/alerts"><span className="material-symbols-outlined text-[22px]">warning</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Advisories</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="data-sources" to="/transparency"><span className="material-symbols-outlined text-[22px]">database</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Sources</span></Link></div></nav>
+</main>
+      <AppNav />
     </>
   );
 }

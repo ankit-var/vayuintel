@@ -1,6 +1,7 @@
 import unittest
 from app.alerts import get_cpcb_category, generate_alerts
 from app.intelligence import generate_intelligence
+from app.aqi_calculator import calculate_sub_index, get_cpcb_aqi, PM25_BREAKPOINTS, PM10_BREAKPOINTS
 
 class TestModules(unittest.TestCase):
     def test_cpcb_categories(self):
@@ -55,6 +56,46 @@ class TestModules(unittest.TestCase):
         self.assertIn("vehicular exhaust, construction dust", intel["source_hypotheses"])
         self.assertIn("general hypotheses", intel["source_hypotheses"])
         self.assertEqual(intel["location"], "delhi")
+
+    def test_aqi_calculator_contiguous_breakpoints(self):
+        # Test boundary gap fix: concentrations between 30 and 31 (e.g. 30.5) must not return None
+        sub_idx_30 = calculate_sub_index(30.0, PM25_BREAKPOINTS)
+        sub_idx_30_5 = calculate_sub_index(30.5, PM25_BREAKPOINTS)
+        sub_idx_31 = calculate_sub_index(31.0, PM25_BREAKPOINTS)
+        self.assertIsNotNone(sub_idx_30)
+        self.assertIsNotNone(sub_idx_30_5)
+        self.assertIsNotNone(sub_idx_31)
+        self.assertEqual(sub_idx_30, 50)
+        self.assertTrue(50 <= sub_idx_30_5 <= 53)
+
+        # Test PM10 boundary values
+        sub_idx_50 = calculate_sub_index(50.0, PM10_BREAKPOINTS)
+        sub_idx_50_5 = calculate_sub_index(50.5, PM10_BREAKPOINTS)
+        self.assertIsNotNone(sub_idx_50)
+        self.assertIsNotNone(sub_idx_50_5)
+
+        # Test negative and null
+        self.assertIsNone(calculate_sub_index(-5, PM25_BREAKPOINTS))
+        self.assertIsNone(calculate_sub_index(None, PM25_BREAKPOINTS))
+
+        # Test cap at 500 for values beyond max breakpoint
+        self.assertEqual(calculate_sub_index(600, PM25_BREAKPOINTS), 500)
+
+    def test_get_cpcb_aqi_aggregation(self):
+        # Empty / None inputs return None
+        self.assertIsNone(get_cpcb_aqi())
+        self.assertIsNone(get_cpcb_aqi(pm25=None, pm10=None))
+
+        # High PM2.5 dominates
+        res = get_cpcb_aqi(pm25=150.0, pm10=60.0)
+        self.assertIsNotNone(res)
+        self.assertEqual(res["prominent_pollutant"], "PM2.5")
+        self.assertTrue(res["aqi"] > 300)
+
+        # High PM10 dominates
+        res2 = get_cpcb_aqi(pm25=20.0, pm10=300.0)
+        self.assertIsNotNone(res2)
+        self.assertEqual(res2["prominent_pollutant"], "PM10")
 
 if __name__ == '__main__':
     unittest.main()

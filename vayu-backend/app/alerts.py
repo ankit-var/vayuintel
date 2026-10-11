@@ -2,7 +2,9 @@ from typing import List, Dict, Any
 from datetime import datetime, timezone
 import uuid
 
-def get_cpcb_category(aqi: int) -> Dict[str, str]:
+def get_cpcb_category(aqi) -> Dict[str, str]:
+    if aqi is None:
+        return {"category": "Unavailable", "severity": "INFO", "precautions": "Air quality data is currently unavailable."}
     if aqi <= 50:
         return {"category": "Good", "severity": "INFO", "precautions": "Air quality is satisfactory, and air pollution poses little or no risk."}
     elif aqi <= 100:

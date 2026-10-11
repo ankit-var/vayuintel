@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router-dom';
+import AppNav from '../components/AppNav';
 import AppHeader from '../components/AppHeader';
 import { useVayu } from '../context/VayuContext';
 
@@ -66,7 +66,7 @@ export default function PollutionSource() {
 <div className="bg-inverse-surface h-full transition-all duration-500" style={{"width":"14%"}} title="Industrial: 14%"></div>
 <div className="bg-error h-full transition-all duration-500" style={{"width":"10%"}} title="Biomass: 10%"></div>
 </div>
-<div className="flex items-center justify-between pt-0.5 px-0.5 text-on-surface-variant font-telemetry-meta text-[10px]">
+<div className="flex flex-wrap items-center justify-between gap-1 pt-0.5 px-0.5 text-on-surface-variant font-telemetry-meta text-[10px]">
 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary inline-block"></span>Trans 34%</span>
 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-secondary inline-block"></span>Dust 24%</span>
 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-surface-tint inline-block"></span>Sec. 18%</span>
@@ -319,7 +319,7 @@ export default function PollutionSource() {
             </p>
 <div className="flex items-center justify-between pt-1">
 <span className="font-telemetry-meta text-[10px] text-on-surface-variant">Confidence Floor: ±14.8% CI</span>
-<button className="font-label-sm text-label-sm text-secondary font-semibold hover:text-primary transition-colors flex items-center gap-0.5">
+<button type="button" className="font-label-sm text-label-sm text-secondary font-semibold hover:text-primary transition-colors flex items-center gap-0.5 min-h-[36px] py-1 focus-visible:outline-2 focus-visible:outline-primary">
                 Request Sensor Deployment
                 <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
 </button>
@@ -340,12 +340,13 @@ export default function PollutionSource() {
 <span className="font-telemetry-meta text-telemetry-meta text-primary-fixed">Download Organic Carbon/EC Raw Split</span>
 </div>
 </div>
-<button aria-label="Export Telemetry Dataset" className="h-9 px-3.5 rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md font-semibold flex items-center gap-1 active:scale-95 transition-transform">
+<button type="button" aria-label="Export Telemetry Dataset" className="min-h-[44px] px-4 rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md font-semibold flex items-center gap-1 active:scale-95 transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">
 <span>Export</span>
 <span className="material-symbols-outlined text-[16px]">download</span>
 </button>
 </div>
-</div></main><nav className="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_10px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-bold"><div className="grid grid-cols-6 items-center h-16 px-1"><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="overview" to="/"><span className="material-symbols-outlined text-[22px]">dashboard</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Overview</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="stations" to="/live"><span className="material-symbols-outlined text-[22px]">sensors</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Stations</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="forecast" to="/forecast"><span className="material-symbols-outlined text-[22px]">cyclone</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Forecast</span></Link><Link aria-current="page" className="flex flex-col items-center justify-center h-full min-h-[44px] transition-colors text-primary font-bold" data-path="attribution" to="/sources"><span className="material-symbols-outlined text-[22px]">neurology</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Attribution</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="advisories" to="/alerts"><span className="material-symbols-outlined text-[22px]">warning</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Advisories</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="data-sources" to="/transparency"><span className="material-symbols-outlined text-[22px]">database</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Sources</span></Link></div></nav>
+</div></main>
+      <AppNav />
     </>
   );
 }

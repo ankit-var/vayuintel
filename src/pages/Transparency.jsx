@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router-dom';
+import AppNav from '../components/AppNav';
 import AppHeader from '../components/AppHeader';
 
 export default function Transparency() {
@@ -61,12 +61,12 @@ export default function Transparency() {
 </div>
 <p className="font-body-sm text-body-sm text-on-surface">Continuous Ambient Air Quality Monitoring (CAAQMS) with Beta-Attenuation Mass Monitors &amp; Gas Chemiluminescence.</p>
 </div>
-<div className="grid grid-cols-2 gap-2 pt-1 font-telemetry-meta text-telemetry-meta">
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-1 font-telemetry-meta text-telemetry-meta">
 <div className="flex items-center gap-1 text-on-surface-variant">
 <span className="material-symbols-outlined text-[13px] text-secondary">place</span>
 <span>Delhi: 38 • BLR: 12 • PAT: 6</span>
 </div>
-<div className="flex items-center justify-end gap-1 text-on-surface-variant">
+<div className="flex items-center gap-1 text-on-surface-variant sm:justify-end">
 <span className="material-symbols-outlined text-[13px] text-secondary">update</span>
 <span>Hourly sync (14m ago)</span>
 </div>
@@ -226,7 +226,7 @@ export default function Transparency() {
 <p className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Reporting silence exceeding 3 hours</p>
 </div>
 </div>
-<button className="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high transition-colors">Inspect</button>
+<button type="button" aria-label="Inspect stale sensor nodes" className="min-h-[36px] px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high transition-colors focus-visible:outline-2 focus-visible:outline-primary">Inspect</button>
 </div>
 <div className="flex flex-col space-y-1.5 pt-1">
 <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-container-lowest font-body-sm text-body-sm">
@@ -274,7 +274,7 @@ export default function Transparency() {
 </div>
 <div className="flex flex-col space-y-2">
 
-<button className="w-full p-space-md rounded-xl bg-primary text-on-primary flex items-center justify-between active:scale-[0.99] transition-all shadow-sm" id="download-geojson">
+<button type="button" className="w-full p-space-md rounded-xl bg-primary text-on-primary flex items-center justify-between active:scale-[0.99] transition-all shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary min-h-[44px]" id="download-geojson">
 <div className="flex items-center gap-space-sm">
 <div className="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center">
 <span className="material-symbols-outlined text-[20px] text-primary-fixed">polyline</span>
@@ -287,7 +287,7 @@ export default function Transparency() {
 <span className="material-symbols-outlined text-[20px] text-on-primary">arrow_downward</span>
 </button>
 
-<button className="w-full p-space-md rounded-xl bg-surface-container text-on-surface flex items-center justify-between hover:bg-surface-container-high active:scale-[0.99] transition-all shadow-sm" id="view-api-docs">
+<button type="button" className="w-full p-space-md rounded-xl bg-surface-container text-on-surface flex items-center justify-between hover:bg-surface-container-high active:scale-[0.99] transition-all shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary min-h-[44px]" id="view-api-docs">
 <div className="flex items-center gap-space-sm">
 <div className="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center">
 <span className="material-symbols-outlined text-[20px] text-secondary">terminal</span>
@@ -300,7 +300,7 @@ export default function Transparency() {
 <span className="material-symbols-outlined text-[20px] text-on-surface-variant">arrow_forward</span>
 </button>
 
-<button className="w-full p-space-md rounded-xl bg-surface-container text-on-surface flex items-center justify-between hover:bg-surface-container-high active:scale-[0.99] transition-all shadow-sm" id="view-whitepaper">
+<button type="button" className="w-full p-space-md rounded-xl bg-surface-container text-on-surface flex items-center justify-between hover:bg-surface-container-high active:scale-[0.99] transition-all shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary min-h-[44px]" id="view-whitepaper">
 <div className="flex items-center gap-space-sm">
 <div className="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center">
 <span className="material-symbols-outlined text-[20px] text-secondary">description</span>
@@ -315,12 +315,13 @@ export default function Transparency() {
 </div>
 </div>
 
-<div className="fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-inverse-surface text-inverse-on-surface shadow-xl flex items-center gap-2 text-label-sm font-label-sm opacity-0 pointer-events-none transition-all duration-300 z-50" id="toast-feedback">
+<div role="status" aria-live="polite" className="fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-inverse-surface text-inverse-on-surface shadow-xl flex items-center gap-2 text-label-sm font-label-sm opacity-0 pointer-events-none transition-all duration-300 z-50" id="toast-feedback">
 <span className="material-symbols-outlined text-[16px] text-secondary-fixed">check_circle</span>
 <span id="toast-message">Telemetry payload queued for download</span>
 </div>
 </div>
-</main><nav className="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_10px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-bold"><div className="grid grid-cols-6 items-center h-16 px-1"><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="overview" to="/"><span className="material-symbols-outlined text-[22px]">dashboard</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Overview</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="stations" to="/live"><span className="material-symbols-outlined text-[22px]">sensors</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Stations</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="forecast" to="/forecast"><span className="material-symbols-outlined text-[22px]">cyclone</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Forecast</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="attribution" to="/sources"><span className="material-symbols-outlined text-[22px]">neurology</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Attribution</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="advisories" to="/alerts"><span className="material-symbols-outlined text-[22px]">warning</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Advisories</span></Link><Link aria-current="page" className="flex flex-col items-center justify-center h-full min-h-[44px] transition-colors text-primary font-bold" data-path="data-sources" to="/transparency"><span className="material-symbols-outlined text-[22px]">database</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Sources</span></Link></div></nav>
+</main>
+      <AppNav />
     </>
   );
 }

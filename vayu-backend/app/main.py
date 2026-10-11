@@ -79,7 +79,7 @@ class Station(BaseModel):
 class ForecastPrediction(BaseModel):
     timestamp: str
     horizon_hours: int
-    aqi_projected: int
+    aqi_projected: Optional[int] = None
     confidence: str
     is_observed: bool
 
@@ -231,8 +231,9 @@ async def get_observations(city: str = Query(...)):
                         param = sensor.get("parameter", {}).get("name", "").lower().replace(".", "")
                         val = sensor.get("latest", {}).get("value")
                         if val is not None:
-                            aqi_calc = get_cpcb_aqi(**{param: val}) if param in ["pm25", "pm10", "no2"] else None
-                            aqi_val = aqi_calc["aqi"] if aqi_calc else int(val)
+                            aqi_params = ["pm25", "pm10", "no2", "so2", "co", "o3"]
+                            aqi_calc = get_cpcb_aqi(**{param: val}) if param in aqi_params else None
+                            aqi_val = aqi_calc["aqi"] if aqi_calc else None
                             cat_info = get_cpcb_category(aqi_val)
                             observations.append({
                                 "parameter": param,
@@ -276,10 +277,10 @@ async def get_observations(city: str = Query(...)):
         for idx, station in enumerate(stations):
             result = aq_data[idx] if idx < len(aq_data) else aq_data[0]
             current = result.get("current", {})
-            iso_time = current.get("time")
+            iso_time = current.get("time", "")
             if iso_time and not iso_time.endswith("Z"):
                 iso_time = f"{iso_time}Z"
-            else:
+            if not iso_time:
                 iso_time = datetime.now(timezone.utc).isoformat()
                 
             pm25 = current.get("pm2_5")
@@ -289,8 +290,9 @@ async def get_observations(city: str = Query(...)):
             co = current.get("carbon_monoxide")
             o3 = current.get("ozone")
             
-            cpcb_res = get_cpcb_aqi(pm25=pm25, pm10=pm10, no2=no2)
-            station_aqi = cpcb_res["aqi"] if cpcb_res else (int(pm25) if pm25 else 120)
+            co_mg = round(co / 1000.0, 2) if co is not None else None
+            cpcb_res = get_cpcb_aqi(pm25=pm25, pm10=pm10, no2=no2, so2=so2, co=co_mg, o3=o3)
+            station_aqi = cpcb_res["aqi"] if cpcb_res else None
             cat_info = get_cpcb_category(station_aqi)
             
             station_coords = {"latitude": station["lat"], "longitude": station["lon"]}
@@ -393,8 +395,8 @@ async def get_forecasts(city: str = Query(...)):
     
     aqi_result = get_cpcb_aqi(pm25=avg_pm25, pm10=avg_pm10, no2=avg_no2)
     
-    # Fallback to an average value if OpenAQ returns no valid data right now
-    current_aqi = aqi_result["aqi"] if aqi_result else 150
+    # If no valid observations, report None (caller must handle gracefully)
+    current_aqi = aqi_result["aqi"] if aqi_result else None
     prominent = aqi_result["prominent_pollutant"] if aqi_result else "Unknown"
     
     now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
@@ -405,21 +407,22 @@ async def get_forecasts(city: str = Query(...)):
         "timestamp": now.isoformat().replace("+00:00", "Z"),
         "horizon_hours": 0,
         "aqi_projected": current_aqi,
-        "confidence": "High",
+        "confidence": "High" if current_aqi is not None else "None",
         "is_observed": True
     })
     
     # 48-hour Persistence Baseline
     for h in range(1, 49):
         future_time = now + timedelta(hours=h)
-        confidence = "High" if h <= 12 else "Medium" if h <= 24 else "Low"
-        predictions.append({
-            "timestamp": future_time.isoformat().replace("+00:00", "Z"),
-            "horizon_hours": h,
-            "aqi_projected": current_aqi,
-            "confidence": confidence,
-            "is_observed": False
-        })
+        if current_aqi is not None:
+            confidence = "High" if h <= 12 else "Medium" if h <= 24 else "Low"
+            predictions.append({
+                "timestamp": future_time.isoformat().replace("+00:00", "Z"),
+                "horizon_hours": h,
+                "aqi_projected": current_aqi,
+                "confidence": confidence,
+                "is_observed": False
+            })
         
     return {
         "location": city,

@@ -156,13 +156,18 @@ export default function SpatialHotspotsMap() {
     <div className="relative w-full h-64 rounded-xl overflow-hidden bg-surface-container">
 
       {/* ── Layer toggle controls (AQI / PM2.5 / Wind) ── */}
-      <div className="absolute top-2 left-2 flex items-center gap-1 bg-surface-container-lowest/95 backdrop-blur-md rounded-lg p-0.5 z-[1000] shadow-sm border border-outline-variant/30">
+      <div
+        className="absolute top-2 left-2 flex items-center gap-1 bg-surface-container-lowest/95 backdrop-blur-md rounded-lg p-1 z-[1000] shadow-sm border border-outline-variant/30"
+        role="group"
+        aria-label="Map layer selection"
+      >
         {Object.entries(LAYERS).map(([key, def]) => (
           <button
             key={key}
             type="button"
+            aria-pressed={activeLayer === key}
             onClick={() => setActiveLayer(key)}
-            className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
+            className={`min-h-[36px] min-w-[44px] px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all focus-visible:outline-2 focus-visible:outline-primary ${
               activeLayer === key
                 ? 'bg-primary text-on-primary shadow-sm'
                 : 'text-on-surface-variant hover:text-on-surface'
@@ -266,7 +271,7 @@ export default function SpatialHotspotsMap() {
 
       {/* ── Overlay: no geolocated stations ── */}
       {!hasMarkers && !loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-container/85 backdrop-blur-sm z-[1000] rounded-xl pointer-events-none">
+        <div role="status" aria-live="polite" className="absolute inset-0 flex flex-col items-center justify-center bg-surface-container/85 backdrop-blur-sm z-[1000] rounded-xl pointer-events-none">
           <span className="material-symbols-outlined text-[32px] text-on-surface-variant mb-2">location_off</span>
           <p className="font-label-md text-label-md text-on-surface font-semibold text-center px-4">
             No station data received from backend
@@ -279,23 +284,23 @@ export default function SpatialHotspotsMap() {
 
       {/* ── Overlay: loading ── */}
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-surface-container/50 z-[1000] rounded-xl pointer-events-none">
+        <div role="status" aria-live="polite" aria-label="Loading map data" className="absolute inset-0 flex items-center justify-center bg-surface-container/50 z-[1000] rounded-xl pointer-events-none">
           <span className="material-symbols-outlined text-[28px] text-primary" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
         </div>
       )}
 
       {/* ── Bottom status bar ── */}
-      <div className="absolute bottom-8 left-2 right-2 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg shadow-sm flex items-center justify-between z-[1000] pointer-events-none">
-        <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-secondary text-[16px]">sensors</span>
-          <span className="font-telemetry-meta text-telemetry-meta text-on-surface">
+      <div role="status" className="absolute bottom-8 left-2 right-2 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg shadow-sm flex items-center justify-between gap-2 z-[1000] pointer-events-none overflow-hidden">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="material-symbols-outlined text-secondary text-[16px] shrink-0">sensors</span>
+          <span className="font-telemetry-meta text-telemetry-meta text-on-surface truncate">
             {hasMarkers
               ? `${stationMarkers.length} station${stationMarkers.length !== 1 ? 's' : ''} · ${CITY_COORDS[city]?.label ?? city} · ${LAYERS[activeLayer].label} layer`
               : loading ? 'Fetching station data…' : 'Awaiting data'}
           </span>
         </div>
         {hasMarkers && (
-          <span className="font-label-sm text-label-sm text-secondary font-semibold">
+          <span className="font-label-sm text-label-sm text-secondary font-semibold shrink-0">
             {activeLayer === 'Wind' && weather?.wind_speed != null
               ? `Wind: ${weather.wind_speed} km/h`
               : activeLayer === 'PM25'

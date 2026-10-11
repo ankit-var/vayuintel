@@ -1,399 +1,495 @@
-
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import AppNav from '../components/AppNav';
 import AppHeader from '../components/AppHeader';
 import LiveWeatherBar from '../components/LiveWeatherBar';
 import { useVayu } from '../context/VayuContext';
+import { getAqiCategory, formatTimeIST } from '../utils/dataUtils';
 
 export default function Forecast() {
-  const { forecasts } = useVayu();
-  
-  const preds = forecasts?.predictions || [];
-  const peak = preds.length ? Math.max(...preds.map(p => p.aqi_projected)) : 418;
-  const peakTimeObj = preds.find(p => p.aqi_projected === peak);
-  const peakTime = peakTimeObj ? new Date(peakTimeObj.timestamp).toLocaleTimeString('en-IN', {hour: '2-digit', minute:'2-digit'}) : 'Tomorrow, 06:30 AM';
+  const { forecasts, weather, loading, city } = useVayu();
+  const [selectedHorizon, setSelectedHorizon] = useState(48);
+
+  const rawPreds = useMemo(() => {
+    return Array.isArray(forecasts?.predictions) ? forecasts.predictions : [];
+  }, [forecasts]);
+
+  // Filter predictions by selected horizon
+  const filteredPreds = useMemo(() => {
+    if (!rawPreds.length) return [];
+    return rawPreds.filter(p => p.horizon_hours <= selectedHorizon);
+  }, [rawPreds, selectedHorizon]);
+
+  // Derived peak
+  const validAqis = filteredPreds
+    .map(p => p.aqi_projected)
+    .filter(val => val != null && !Number.isNaN(val));
+
+  const peak = validAqis.length > 0 ? Math.max(...validAqis) : null;
+  const peakPred = peak != null ? filteredPreds.find(p => p.aqi_projected === peak) : null;
+  const peakCat = getAqiCategory(peak);
+
+  const peakTimeDisplay = peakPred?.timestamp
+    ? formatTimeIST(peakPred.timestamp)
+    : (peak != null ? 'Within forecast period' : 'Awaiting data');
+
+  // Chart coordinate mapping
+  const chartPoints = useMemo(() => {
+    if (filteredPreds.length === 0) return [];
+    const maxH = Math.max(...filteredPreds.map(p => p.horizon_hours), 1);
+    return filteredPreds.map(p => {
+      const x = 20 + (p.horizon_hours / maxH) * 320;
+      // AQI 0 to 500 mapped to y: 145 (bottom) to 15 (top)
+      const val = p.aqi_projected != null ? Math.min(500, Math.max(0, p.aqi_projected)) : 0;
+      const y = 145 - (val / 500) * 125;
+      return { x, y, aqi: p.aqi_projected, h: p.horizon_hours, ts: p.timestamp, isObserved: p.is_observed };
+    });
+  }, [filteredPreds]);
+
+  // SVG path generation
+  const pathD = useMemo(() => {
+    if (chartPoints.length === 0) return '';
+    return chartPoints.reduce((acc, pt, idx) => {
+      return idx === 0 ? `M ${pt.x.toFixed(1)},${pt.y.toFixed(1)}` : `${acc} L ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+    }, '');
+  }, [chartPoints]);
+
+  const areaD = useMemo(() => {
+    if (chartPoints.length === 0) return '';
+    const firstX = chartPoints[0].x.toFixed(1);
+    const lastX = chartPoints[chartPoints.length - 1].x.toFixed(1);
+    return `${pathD} L ${lastX},155 L ${firstX},155 Z`;
+  }, [pathD, chartPoints]);
+
+  // Periodic breakdown cards (every 4 to 8 hours depending on horizon)
+  const breakdownCards = useMemo(() => {
+    if (filteredPreds.length === 0) return [];
+    const step = selectedHorizon === 24 ? 4 : 6;
+    const sampled = filteredPreds.filter((p) => p.horizon_hours > 0 && p.horizon_hours % step === 0);
+    if (sampled.length === 0 && filteredPreds.length > 0) {
+      return filteredPreds.slice(1, 6);
+    }
+    return sampled;
+  }, [filteredPreds, selectedHorizon]);
 
   return (
     <>
       <AppHeader pageTitle="Forecast" />
-      <main className="flex flex-col relative w-full pt-20 pb-24 bg-surface px-space-md"><div className="flex flex-col w-full gap-space-md">
-      <LiveWeatherBar />
+      <main className="flex flex-col relative w-full pt-20 pb-24 bg-surface px-space-md">
+        <div className="flex flex-col w-full gap-space-md">
+          <LiveWeatherBar />
 
-<div className="flex items-center gap-space-xs overflow-x-auto pb-1 no-scrollbar">
-<button className="bg-primary text-on-primary font-label-md text-label-md px-3.5 py-2 rounded-full whitespace-nowrap shadow-sm flex items-center gap-1.5 transition-transform active:scale-95">
-<span className="material-symbols-outlined text-[15px]" style={{"fontVariationSettings":"'FILL' 1"}}>auto_graph</span>
-      48 Hours (Recommended)
-    </button>
-<button className="bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md px-3 py-2 rounded-full whitespace-nowrap transition-colors">
-      24 Hours
-    </button>
-<button className="bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md px-3 py-2 rounded-full whitespace-nowrap transition-colors">
-      72h Outlook
-    </button>
-</div>
-
-<div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm relative overflow-hidden">
-<div className="absolute -right-10 -bottom-10 w-40 h-40 bg-error-container/20 rounded-full blur-2xl pointer-events-none"></div>
-<div className="flex items-center justify-between mb-3">
-<div className="flex items-center gap-1.5">
-<span className="material-symbols-outlined text-secondary text-[18px]">crisis_alert</span>
-<span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Predictive Peak Trajectory</span>
-</div>
-<span className="bg-error text-on-error font-telemetry-meta text-telemetry-meta font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-<span className="w-1.5 h-1.5 rounded-full bg-surface-container-lowest animate-ping"></span>
-        {peak > 400 ? 'CPCB SEVERE' : peak > 300 ? 'VERY POOR' : peak > 200 ? 'POOR' : 'MODERATE'}
-      </span>
-</div>
-<div className="flex items-baseline gap-2 mb-1">
-<span className="font-telemetry-num text-[38px] leading-none text-on-surface font-bold tracking-tight">{peak}</span>
-<span className="font-label-md text-label-md text-error font-semibold">AQI Peak</span>
-<span className="font-body-sm text-body-sm text-on-surface-variant ml-auto text-right">{peakTime}</span>
-</div>
-
-<div className="bg-surface-container-low rounded-lg p-space-sm mt-3 flex items-start gap-2.5">
-<span className="material-symbols-outlined text-error text-[18px] shrink-0 mt-0.5">cyclone</span>
-<div className="flex flex-col">
-<span className="font-label-sm text-label-sm text-on-surface font-semibold">Primary Trigger Factor</span>
-<span className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
-          Nighttime thermal inversion trap combined with stagnant calm surface winds (&lt;3 km/h NW).
-        </span>
-</div>
-</div>
-
-<div className="mt-3.5 pt-3 flex flex-col gap-1.5">
-<div className="flex justify-between items-center text-on-surface-variant font-telemetry-meta text-telemetry-meta">
-<span className="flex items-center gap-1 text-on-surface">
-<span className="material-symbols-outlined text-[14px] text-secondary">verified</span>
-          High Confidence (88% Next 18h)
-        </span>
-<span>Moderate (64% 24–48h)</span>
-</div>
-<div className="w-full bg-surface-container h-2 rounded-full overflow-hidden flex">
-<div className="bg-secondary h-full rounded-l-full" style={{"width":"60%"}}></div>
-<div className="bg-secondary-container h-full rounded-r-full" style={{"width":"40%"}}></div>
-</div>
-</div>
-</div>
-
-<div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-3">
-<div className="flex items-center justify-between">
-<div className="flex flex-col">
-<span className="font-headline-sm text-headline-sm text-on-surface font-bold">Dispersion Trajectory</span>
-<span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Past 12h Observed vs. 48h Ensemble</span>
-</div>
-<div className="flex items-center gap-2 font-telemetry-meta text-[10px]">
-<div className="flex items-center gap-1">
-<span className="w-2.5 h-0.5 bg-primary rounded-full"></span>
-<span className="text-on-surface-variant">Observed</span>
-</div>
-<div className="flex items-center gap-1">
-<span className="w-2.5 h-0.5 bg-error border-b border-dashed border-error"></span>
-<span className="text-on-surface-variant">Ensemble</span>
-</div>
-</div>
-</div>
-
-<div className="relative w-full overflow-hidden rounded-lg bg-surface-container-low p-2">
-
-<div className="flex justify-between items-center px-1 font-telemetry-meta text-telemetry-meta text-on-surface-variant">
-<span>AQI 500 max</span>
-<span className="bg-surface-container px-1.5 py-0.5 rounded text-[10px] text-error">Uncertainty: ±20 AQI</span>
-</div>
-<svg className="w-full h-44 overflow-visible my-1" preserveAspectRatio="none" viewBox="0 0 360 170">
-<defs>
-<lineargradient id="uncertaintyGradient" x1="0" x2="0" y1="0" y2="1">
-<stop offset="0%" stopColor="#ba1a1a" stopOpacity="0.28" />
-<stop offset="60%" stopColor="#006a61" stopOpacity="0.12" />
-<stop offset="100%" stopColor="#006a61" stopOpacity="0.02" />
-</lineargradient>
-<lineargradient id="forecastLineGrad" x1="0" x2="1" y1="0" y2="0">
-<stop offset="0%" stopColor="#006a61" />
-<stop offset="28%" stopColor="#ba1a1a" />
-<stop offset="65%" stopColor="#d97706" />
-<stop offset="100%" stopColor="#006a61" />
-</lineargradient>
-</defs>
-
-<line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="30" y2="30" />
-<text fill="#ba1a1a" fontFamily="JetBrains Mono" fontSize="7" x="12" y="27">400 Severe</text>
-<line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="75" y2="75" />
-<text fill="#707974" fontFamily="JetBrains Mono" fontSize="7" x="12" y="72">300 Very Poor</text>
-<line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="120" y2="120" />
-<text fill="#707974" fontFamily="JetBrains Mono" fontSize="7" x="12" y="117">200 Moderate</text>
-
-<polygon fill="url(#uncertaintyGradient)" points="
-          90,62
-          130,52
-          175,20
-          230,80
-          290,64
-          350,90
-          350,116
-          290,88
-          230,105
-          175,38
-          130,68
-          90,62
-        " />
-
-<path d="M 15,95 C 40,88 65,74 90,62" fill="none" stroke="#003527" strokeLinecap="round" strokeWidth="2.6" />
-
-<circle cx="15" cy="95" fill="#003527" r="2.5" />
-<circle cx="50" cy="82" fill="#003527" r="2" />
-
-<line stroke="#006a61" strokeDasharray="3 2" strokeWidth="1.2" x1="90" x2="90" y1="12" y2="145" />
-
-<path d="M 90,62 C 115,58 145,28 175,28 C 205,28 215,92 245,92 C 275,92 285,76 315,76 C 335,76 345,102 350,102" fill="none" stroke="url(#forecastLineGrad)" strokeDasharray="4 3" strokeLinecap="round" strokeWidth="2.4" />
-
-
-<circle cx="90" cy="62" fill="#006a61" r="4.5" stroke="#ffffff" strokeWidth="1.8" />
-
-<circle cx="175" cy="28" fill="#ba1a1a" r="4.5" stroke="#ffffff" strokeWidth="1.8" />
-
-<circle cx="245" cy="92" fill="#006a61" r="3.5" stroke="#ffffff" strokeWidth="1.5" />
-
-<circle cx="350" cy="102" fill="#006a61" r="3.5" stroke="#ffffff" strokeWidth="1.5" />
-</svg>
-
-<div className="grid grid-cols-5 text-center font-telemetry-meta text-[9px] text-on-surface-variant pt-1 border-t border-surface-container">
-<div className="text-left font-semibold text-primary">NOW<br/><span className="text-[8px]">14:30 (342)</span></div>
-<div>+6h<br/><span className="text-[8px]">20:00 (365)</span></div>
-<div className="font-bold text-error">PEAK +16h<br/><span className="text-[8px]">06:00 (418)</span></div>
-<div>+24h<br/><span className="text-[8px]">14:00 (295)</span></div>
-<div className="text-right">+48h<br/><span className="text-[8px]">Day 2 (280)</span></div>
-</div>
-</div>
-
-<div className="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm px-1">
-<span className="flex items-center gap-1 text-secondary">
-<span className="material-symbols-outlined text-[16px]">touch_app</span>
-        Ensemble upper-limit bound: 435 AQI
-      </span>
-<span className="font-telemetry-meta text-telemetry-meta">Lower bound: 395 AQI</span>
-</div>
-</div>
-
-<div className="flex flex-col gap-2">
-<div className="flex items-center justify-between px-0.5">
-<div className="flex items-center gap-1.5">
-<span className="material-symbols-outlined text-secondary text-[18px]">view_timeline</span>
-<h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">4-Hour Predictive Breakdown</h3>
-</div>
-<span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Swipe horizontally</span>
-</div>
-<div className="flex gap-space-sm overflow-x-auto pb-2 no-scrollbar -mx-space-md px-space-md">
-
-<div className="bg-surface-container-lowest min-w-[145px] p-3 rounded-xl shadow-sm flex flex-col justify-between shrink-0">
-<div className="flex justify-between items-start mb-2">
-<span className="font-label-sm text-label-sm text-on-surface font-semibold">Tonight 20:00</span>
-<span className="font-telemetry-meta text-[10px] text-on-surface-variant">+6h</span>
-</div>
-<div className="flex items-baseline gap-1 my-1">
-<span className="font-telemetry-num text-headline-md text-on-surface font-bold">365</span>
-<span className="font-label-sm text-[10px] text-error font-medium">Very Poor</span>
-</div>
-<div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-surface-container text-on-surface-variant font-body-sm text-[11px]">
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px] text-secondary">foggy</span>
-<span>Hazy Smog</span>
-</div>
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">air</span>
-<span>3.8 km/h NW</span>
-</div>
-<div className="bg-surface-container px-1.5 py-0.5 rounded text-[10px] text-error font-medium text-center">
-            Dispersion: Poor
+          {/* Horizon toggle buttons */}
+          <div className="flex items-center gap-space-xs overflow-x-auto pb-1 no-scrollbar" role="group" aria-label="Forecast horizon selection">
+            <button
+              type="button"
+              onClick={() => setSelectedHorizon(48)}
+              className={`font-label-md text-label-md px-3.5 py-2 min-h-[40px] rounded-full whitespace-nowrap shadow-sm flex items-center gap-1.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                selectedHorizon === 48
+                  ? 'bg-primary text-on-primary font-semibold'
+                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[15px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
+                auto_graph
+              </span>
+              48 Hours (CPCB Baseline)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedHorizon(24)}
+              className={`font-label-md text-label-md px-3.5 py-2 min-h-[40px] rounded-full whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                selectedHorizon === 24
+                  ? 'bg-primary text-on-primary font-semibold'
+                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              24 Hours
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedHorizon(72)}
+              className={`font-label-md text-label-md px-3.5 py-2 min-h-[40px] rounded-full whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                selectedHorizon === 72
+                  ? 'bg-primary text-on-primary font-semibold'
+                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              Extended Outlook (48h max)
+            </button>
           </div>
-</div>
-</div>
 
-<div className="bg-error-container/40 min-w-[155px] p-3 rounded-xl shadow-sm flex flex-col justify-between shrink-0 relative overflow-hidden">
-<div className="absolute top-0 right-0 bg-error text-on-error font-telemetry-meta text-[9px] px-1.5 py-0.5 rounded-bl font-bold">
-          PEAK
+          {/* Peak Trajectory Card */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm relative overflow-hidden">
+            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-error-container/20 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-secondary text-[18px]">crisis_alert</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                  Projected Peak AQI
+                </span>
+              </div>
+              <span
+                className={`font-telemetry-meta text-telemetry-meta font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                  peak != null && peak > 300 ? 'bg-error text-on-error' : 'bg-surface-container text-on-surface'
+                }`}
+              >
+                {peak != null && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-surface-container-lowest animate-ping"></span>
+                )}
+                {peakCat.label.toUpperCase()}
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="font-telemetry-num text-[38px] leading-none text-on-surface font-bold tracking-tight">
+                {peak != null ? peak : '—'}
+              </span>
+              <span className="font-label-md text-label-md text-error font-semibold">AQI Peak</span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant ml-auto text-right">
+                {peakTimeDisplay}
+              </span>
+            </div>
+
+            <div className="bg-surface-container-low rounded-lg p-space-sm mt-3 flex items-start gap-2.5">
+              <span className="material-symbols-outlined text-error text-[18px] shrink-0 mt-0.5">cyclone</span>
+              <div className="flex flex-col">
+                <span className="font-label-sm text-label-sm text-on-surface font-semibold">Methodology Note</span>
+                <span className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                  {forecasts?.model_information || 'Persistence baseline calculated from latest verified CPCB station telemetry.'}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-3.5 pt-3 flex flex-col gap-1.5">
+              <div className="flex justify-between items-center text-on-surface-variant font-telemetry-meta text-telemetry-meta">
+                <span className="flex items-center gap-1 text-on-surface">
+                  <span className="material-symbols-outlined text-[14px] text-secondary">verified</span>
+                  Estimated Forecast Confidence
+                </span>
+                <span>Near-term: High · Mid-term: Medium</span>
+              </div>
+              <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden flex">
+                <div className="bg-secondary h-full rounded-l-full" style={{ width: '65%' }}></div>
+                <div className="bg-secondary-container h-full rounded-r-full" style={{ width: '35%' }}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Dispersion Trajectory Chart */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="flex flex-col">
+                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                    Dispersion Trajectory
+                  </span>
+                  <span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">
+                    Current Observed vs. {selectedHorizon}h Projected Baseline
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 font-telemetry-meta text-[10px]">
+                <div className="flex items-center gap-1">
+                  <span className="w-2.5 h-0.5 bg-primary rounded-full"></span>
+                  <span className="text-on-surface-variant">Projected</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative w-full overflow-hidden rounded-lg bg-surface-container-low p-2">
+              <div className="flex justify-between items-center px-1 font-telemetry-meta text-telemetry-meta text-on-surface-variant">
+                <span>AQI 500 max</span>
+                <span className="bg-surface-container px-1.5 py-0.5 rounded text-[10px] text-secondary font-medium">
+                  {rawPreds.length > 0 ? `${filteredPreds.length} Hours Plotted` : 'Awaiting Data'}
+                </span>
+              </div>
+
+              {chartPoints.length > 0 ? (
+                <svg className="w-full h-44 overflow-visible my-1" preserveAspectRatio="none" viewBox="0 0 360 170">
+                  <defs>
+                    <linearGradient id="forecastAreaGrad" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#006a61" stopOpacity="0.30" />
+                      <stop offset="100%" stopColor="#006a61" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Threshold gridlines */}
+                  <line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="45" y2="45" />
+                  <text fill="#ba1a1a" fontFamily="JetBrains Mono" fontSize="7" x="12" y="42">
+                    400 Severe
+                  </text>
+                  <line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="70" y2="70" />
+                  <text fill="#707974" fontFamily="JetBrains Mono" fontSize="7" x="12" y="67">
+                    300 Very Poor
+                  </text>
+                  <line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="95" y2="95" />
+                  <text fill="#707974" fontFamily="JetBrains Mono" fontSize="7" x="12" y="92">
+                    200 Moderate
+                  </text>
+
+                  {/* Area fill */}
+                  <polygon fill="url(#forecastAreaGrad)" points={areaD.replace(/[^0-9., LZM]/g, '')} />
+
+                  {/* Trajectory line */}
+                  <path d={pathD} fill="none" stroke="#006a61" strokeWidth="2.5" strokeLinecap="round" />
+
+                  {/* Data points */}
+                  {chartPoints
+                    .filter((_, idx) => idx === 0 || idx % Math.max(1, Math.floor(chartPoints.length / 5)) === 0 || idx === chartPoints.length - 1)
+                    .map((pt, i) => (
+                      <circle
+                        key={i}
+                        cx={pt.x}
+                        cy={pt.y}
+                        fill={pt.isObserved ? '#003527' : '#006a61'}
+                        r={pt.isObserved ? 4.5 : 3.5}
+                        stroke="#ffffff"
+                        strokeWidth="1.5"
+                      />
+                    ))}
+                </svg>
+              ) : (
+                <div className="w-full h-44 flex flex-col items-center justify-center text-on-surface-variant gap-1.5">
+                  <span className="material-symbols-outlined text-[28px]">insights</span>
+                  <span className="font-body-sm text-body-sm">
+                    {loading ? 'Loading forecast models…' : 'No forecast predictions currently available.'}
+                  </span>
+                </div>
+              )}
+
+              {/* X Axis time labels */}
+              {chartPoints.length > 0 && (
+                <div className="grid grid-cols-4 text-center font-telemetry-meta text-[9px] text-on-surface-variant pt-1 border-t border-surface-container">
+                  <div className="text-left font-semibold text-primary">
+                    NOW
+                    <br />
+                    <span className="text-[8px]">
+                      {chartPoints[0]?.aqi != null ? `AQI ${chartPoints[0].aqi}` : '—'}
+                    </span>
+                  </div>
+                  <div>
+                    +{Math.round(selectedHorizon * 0.33)}h
+                    <br />
+                    <span className="text-[8px]">
+                      {chartPoints[Math.floor(chartPoints.length * 0.33)]?.aqi != null
+                        ? `AQI ${chartPoints[Math.floor(chartPoints.length * 0.33)].aqi}`
+                        : '—'}
+                    </span>
+                  </div>
+                  <div>
+                    +{Math.round(selectedHorizon * 0.66)}h
+                    <br />
+                    <span className="text-[8px]">
+                      {chartPoints[Math.floor(chartPoints.length * 0.66)]?.aqi != null
+                        ? `AQI ${chartPoints[Math.floor(chartPoints.length * 0.66)].aqi}`
+                        : '—'}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    +{selectedHorizon}h
+                    <br />
+                    <span className="text-[8px]">
+                      {chartPoints[chartPoints.length - 1]?.aqi != null
+                        ? `AQI ${chartPoints[chartPoints.length - 1].aqi}`
+                        : '—'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm px-1">
+              <span className="flex items-center gap-1 text-secondary">
+                <span className="material-symbols-outlined text-[16px]">info</span>
+                Method: Persistence Baseline Model
+              </span>
+              <span className="font-telemetry-meta text-telemetry-meta">
+                CPCB Standard AQI
+              </span>
+            </div>
+          </div>
+
+          {/* 4-Hour / 6-Hour Predictive Breakdown Cards */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between px-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-secondary text-[18px]">view_timeline</span>
+                <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                  Predictive Breakdown
+                </h3>
+              </div>
+              <span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">
+                Scroll horizontally
+              </span>
+            </div>
+
+            <div className="flex gap-space-sm overflow-x-auto pb-2 no-scrollbar -mx-space-md px-space-md">
+              {breakdownCards.length > 0 ? (
+                breakdownCards.map((p, idx) => {
+                  const cat = getAqiCategory(p.aqi_projected);
+                  const timeStr = p.timestamp ? formatTimeIST(p.timestamp) : `+${p.horizon_hours}h`;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-surface-container-lowest min-w-[150px] p-3 rounded-xl shadow-sm flex flex-col justify-between shrink-0 border border-outline-variant/30"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-label-sm text-label-sm text-on-surface font-semibold">{timeStr}</span>
+                        <span className="font-telemetry-meta text-[10px] text-on-surface-variant font-mono">
+                          +{p.horizon_hours}h
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-1 my-1">
+                        <span className="font-telemetry-num text-headline-md text-on-surface font-bold">
+                          {p.aqi_projected != null ? p.aqi_projected : '—'}
+                        </span>
+                        <span
+                          className={`font-label-sm text-[10px] font-semibold ${
+                            p.aqi_projected != null && p.aqi_projected > 300 ? 'text-error' : 'text-primary'
+                          }`}
+                        >
+                          {cat.label}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-surface-container text-on-surface-variant font-body-sm text-[11px]">
+                        <div className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px] text-secondary">verified</span>
+                          <span>Confidence: {p.confidence || 'Medium'}</span>
+                        </div>
+                        <div className="bg-surface-container px-1.5 py-0.5 rounded text-[10px] text-secondary font-medium text-center">
+                          {p.aqi_projected != null && p.aqi_projected > 300 ? 'Dispersion: Stagnant' : 'Dispersion: Moderate'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="bg-surface-container-lowest p-4 rounded-xl text-on-surface-variant text-body-sm w-full text-center">
+                  {loading ? 'Loading predictions…' : 'No predictions available.'}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Meteorological Drivers wired to real weather context */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-secondary text-[18px]">thermostat</span>
+                <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                  Meteorological Drivers
+                </h3>
+              </div>
+              <span className="bg-surface-container-low font-telemetry-meta text-telemetry-meta text-on-surface-variant px-2 py-0.5 rounded-full">
+                Open-Meteo Synoptic Sync
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-surface-container-low rounded-lg p-3 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-secondary">
+                  <span className="material-symbols-outlined text-[20px]">air</span>
+                </div>
+                <div className="flex flex-col flex-1">
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="font-label-md text-label-md text-on-surface font-semibold">
+                      Surface Wind Speed
+                    </span>
+                    <span className="font-telemetry-num text-label-md text-on-surface font-bold">
+                      {weather?.wind_speed != null ? `${weather.wind_speed} km/h` : '—'}
+                    </span>
+                  </div>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                    {weather?.wind_speed != null && weather.wind_speed < 5
+                      ? 'Calm winds (<5 km/h) limit horizontal ventilation, favoring localized aerosol accumulation.'
+                      : 'Wind dynamics promote atmospheric dispersion and dilution of particulate emissions.'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-surface-container-low rounded-lg p-3 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-error">
+                  <span className="material-symbols-outlined text-[20px]">thermostat</span>
+                </div>
+                <div className="flex flex-col flex-1">
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="font-label-md text-label-md text-on-surface font-semibold">
+                      Ambient Temperature
+                    </span>
+                    <span className="font-telemetry-meta text-telemetry-meta text-on-surface font-bold">
+                      {weather?.temperature != null ? `${weather.temperature}°C` : '—'}
+                    </span>
+                  </div>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                    Diurnal temperature fluctuations dictate surface thermal stratification and nocturnal inversion depth.
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-surface-container-low rounded-lg p-3 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-secondary">
+                  <span className="material-symbols-outlined text-[20px]">humidity_percentage</span>
+                </div>
+                <div className="flex flex-col flex-1">
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="font-label-md text-label-md text-on-surface font-semibold">
+                      Relative Humidity
+                    </span>
+                    <span className="font-telemetry-num text-label-md text-on-surface font-bold">
+                      {weather?.humidity != null ? `${weather.humidity}% RH` : '—'}
+                    </span>
+                  </div>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                    Elevated humidity (&gt;70% RH) fosters secondary sulfate and nitrate aerosol formation via heterogeneous aqueous reactions.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Model Validation & Scientific Governance */}
+          <div className="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-2.5">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-[20px]">model_training</span>
+              <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                Model Transparency &amp; Methodology
+              </span>
+            </div>
+            <div className="flex flex-col gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
+              <div className="flex justify-between items-center py-1 border-b border-surface-container">
+                <span>Model Architecture</span>
+                <span className="font-telemetry-meta text-telemetry-meta font-medium text-on-surface text-right">
+                  CPCB Persistence Baseline
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-surface-container">
+                <span>Calibration Network</span>
+                <span className="font-telemetry-meta text-telemetry-meta text-on-surface">
+                  Live Ground Telemetry ({city})
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-surface-container">
+                <span>Validation Status</span>
+                <span className="font-telemetry-meta text-telemetry-meta text-secondary font-semibold">
+                  Continuous Real-Time Sync
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-surface-container rounded-lg p-2.5 flex items-start gap-2 mt-1">
+              <span className="material-symbols-outlined text-on-surface-variant text-[16px] shrink-0 mt-0.5">
+                info
+              </span>
+              <p className="font-body-sm text-[11px] text-on-surface-variant leading-relaxed">
+                <strong>Methodology Disclosure:</strong> Forecast estimates utilize an observational persistence model based on active CAAQMS observations. Numerical meteorological assimilation and multi-year training validation are in progress.
+              </p>
+            </div>
+          </div>
         </div>
-<div className="flex justify-between items-start mb-2">
-<span className="font-label-sm text-label-sm text-on-error-container font-bold">Dawn 06:00</span>
-<span className="font-telemetry-meta text-[10px] text-error mr-6">+16h</span>
-</div>
-<div className="flex items-baseline gap-1 my-1">
-<span className="font-telemetry-num text-headline-md text-error font-extrabold">418</span>
-<span className="font-label-sm text-[10px] text-on-error-container font-bold">Severe</span>
-</div>
-<div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-error/20 text-on-error-container font-body-sm text-[11px]">
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px] text-error">lens_blur</span>
-<span className="font-medium">Dense Inversion</span>
-</div>
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">air</span>
-<span>1.8 km/h Calm</span>
-</div>
-<div className="bg-error text-on-error px-1.5 py-0.5 rounded text-[10px] font-bold text-center">
-            Dispersion: V. Poor
-          </div>
-</div>
-</div>
+      </main>
 
-<div className="bg-surface-container-lowest min-w-[145px] p-3 rounded-xl shadow-sm flex flex-col justify-between shrink-0">
-<div className="flex justify-between items-start mb-2">
-<span className="font-label-sm text-label-sm text-on-surface font-semibold">Midday 14:00</span>
-<span className="font-telemetry-meta text-[10px] text-on-surface-variant">+24h</span>
-</div>
-<div className="flex items-baseline gap-1 my-1">
-<span className="font-telemetry-num text-headline-md text-on-surface font-bold">295</span>
-<span className="font-label-sm text-[10px] text-secondary font-medium">Poor</span>
-</div>
-<div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-surface-container text-on-surface-variant font-body-sm text-[11px]">
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px] text-secondary">wb_sunny</span>
-<span>Solar Mixing</span>
-</div>
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">air</span>
-<span>8.4 km/h WNW</span>
-</div>
-<div className="bg-surface-container px-1.5 py-0.5 rounded text-[10px] text-secondary font-medium text-center">
-            Dispersion: Fair
-          </div>
-</div>
-</div>
-
-<div className="bg-surface-container-lowest min-w-[145px] p-3 rounded-xl shadow-sm flex flex-col justify-between shrink-0">
-<div className="flex justify-between items-start mb-2">
-<span className="font-label-sm text-label-sm text-on-surface font-semibold">Night 02:00</span>
-<span className="font-telemetry-meta text-[10px] text-on-surface-variant">+36h</span>
-</div>
-<div className="flex items-baseline gap-1 my-1">
-<span className="font-telemetry-num text-headline-md text-on-surface font-bold">340</span>
-<span className="font-label-sm text-[10px] text-error font-medium">Very Poor</span>
-</div>
-<div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-surface-container text-on-surface-variant font-body-sm text-[11px]">
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px] text-secondary">cloud</span>
-<span>Low Mixing</span>
-</div>
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">air</span>
-<span>3.1 km/h NW</span>
-</div>
-<div className="bg-surface-container px-1.5 py-0.5 rounded text-[10px] text-error font-medium text-center">
-            Dispersion: Poor
-          </div>
-</div>
-</div>
-
-<div className="bg-surface-container-lowest min-w-[145px] p-3 rounded-xl shadow-sm flex flex-col justify-between shrink-0">
-<div className="flex justify-between items-start mb-2">
-<span className="font-label-sm text-label-sm text-on-surface font-semibold">Day 2 14:00</span>
-<span className="font-telemetry-meta text-[10px] text-on-surface-variant">+48h</span>
-</div>
-<div className="flex items-baseline gap-1 my-1">
-<span className="font-telemetry-num text-headline-md text-on-surface font-bold">280</span>
-<span className="font-label-sm text-[10px] text-secondary font-medium">Poor</span>
-</div>
-<div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-surface-container text-on-surface-variant font-body-sm text-[11px]">
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px] text-secondary">air</span>
-<span>Breezy Clear</span>
-</div>
-<div className="flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">air</span>
-<span>10.2 km/h W</span>
-</div>
-<div className="bg-surface-container px-1.5 py-0.5 rounded text-[10px] text-secondary font-medium text-center">
-            Dispersion: Fair
-          </div>
-</div>
-</div>
-</div>
-</div>
-
-<div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-3">
-<div className="flex items-center justify-between">
-<div className="flex items-center gap-1.5">
-<span className="material-symbols-outlined text-secondary text-[18px]">thermostat</span>
-<h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">Meteorological Drivers</h3>
-</div>
-<span className="bg-surface-container-low font-telemetry-meta text-telemetry-meta text-on-surface-variant px-2 py-0.5 rounded-full">
-        Synoptic WRF Sync
-      </span>
-</div>
-
-<div className="bg-surface-container-low rounded-lg p-3 flex items-start gap-3">
-<div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-secondary">
-<span className="material-symbols-outlined text-[20px]">air</span>
-</div>
-<div className="flex flex-col flex-1">
-<div className="flex justify-between items-center mb-0.5">
-<span className="font-label-md text-label-md text-on-surface font-semibold">Surface Wind Speed</span>
-<span className="font-telemetry-num text-label-md text-error font-bold">2.1 km/h NW</span>
-</div>
-<span className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
-          Decouples after midnight, inducing severe localized pollutant accumulation and zero horizontal advection.
-        </span>
-</div>
-</div>
-
-<div className="bg-surface-container-low rounded-lg p-3 flex items-start gap-3">
-<div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-error">
-<span className="material-symbols-outlined text-[20px]">layers</span>
-</div>
-<div className="flex flex-col flex-1">
-<div className="flex justify-between items-center mb-0.5">
-<span className="font-label-md text-label-md text-on-surface font-semibold">Thermal Inversion Cap</span>
-<span className="font-telemetry-meta text-telemetry-meta text-error font-bold">03:00 – 08:00 AM</span>
-</div>
-<span className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
-          8°C ground temp vs 14°C aloft creates a rigid ceiling, trapping emissions within the breathing zone.
-        </span>
-</div>
-</div>
-
-<div className="bg-surface-container-low rounded-lg p-3 flex items-start gap-3">
-<div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-secondary">
-<span className="material-symbols-outlined text-[20px]">vertical_align_bottom</span>
-</div>
-<div className="flex flex-col flex-1">
-<div className="flex justify-between items-center mb-0.5">
-<span className="font-label-md text-label-md text-on-surface font-semibold">Boundary Layer (PBL)</span>
-<span className="font-telemetry-num text-label-md text-on-surface font-bold">180m Altitude</span>
-</div>
-<span className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
-          Ventilation column compresses by 72% relative to afternoon norms, critically concentrating ambient particulate matter.
-        </span>
-</div>
-</div>
-</div>
-
-<div className="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-2.5">
-<div className="flex items-center gap-2">
-<span className="material-symbols-outlined text-secondary text-[20px]">model_training</span>
-<span className="font-headline-sm text-headline-sm text-on-surface font-bold">Model Validation &amp; Telemetry</span>
-</div>
-<div className="flex flex-col gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
-<div className="flex justify-between items-center py-1 border-b border-surface-container">
-<span>Model Architecture</span>
-<span className="font-telemetry-meta text-telemetry-meta font-medium text-on-surface text-right">
-          Vayu-WRF Ensemble v2.1
-        </span>
-</div>
-<div className="flex justify-between items-center py-1 border-b border-surface-container">
-<span>Calibration Network</span>
-<span className="font-telemetry-meta text-telemetry-meta text-on-surface">38 CPCB Monitoring Nodes</span>
-</div>
-<div className="flex justify-between items-center py-1 border-b border-surface-container">
-<span>Historical Accuracy</span>
-<span className="font-telemetry-meta text-telemetry-meta text-secondary font-semibold">MAE ±14.2 AQI (24h)</span>
-</div>
-</div>
-
-<div className="bg-surface-container rounded-lg p-2.5 flex items-start gap-2 mt-1">
-<span className="material-symbols-outlined text-on-surface-variant text-[16px] shrink-0 mt-0.5">info</span>
-<p className="font-body-sm text-[11px] text-on-surface-variant leading-relaxed">
-<strong>Scientific MVP Notice:</strong> Demo forecast generated via numerical meteorological assimilation models. This advisory is optimized for civic planning insights and is not a statutory legal alert.
-      </p>
-</div>
-</div>
-</div></main><nav className="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_10px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-bold"><div className="grid grid-cols-6 items-center h-16 px-1"><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="overview" to="/"><span className="material-symbols-outlined text-[22px]">dashboard</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Overview</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="stations" to="/live"><span className="material-symbols-outlined text-[22px]">sensors</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Stations</span></Link><Link aria-current="page" className="flex flex-col items-center justify-center h-full min-h-[44px] transition-colors text-primary font-bold" data-path="forecast" to="/forecast"><span className="material-symbols-outlined text-[22px]">cyclone</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Forecast</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="attribution" to="/sources"><span className="material-symbols-outlined text-[22px]">neurology</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Attribution</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="advisories" to="/alerts"><span className="material-symbols-outlined text-[22px]">warning</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Advisories</span></Link><Link className="flex flex-col items-center justify-center h-full min-h-[44px] text-on-surface-variant hover:text-on-surface transition-colors" data-path="data-sources" to="/transparency"><span className="material-symbols-outlined text-[22px]">database</span><span className="font-label-sm text-[10px] tracking-tight truncate mt-0.5">Sources</span></Link></div></nav>
+      <AppNav />
     </>
   );
 }

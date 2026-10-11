@@ -24,6 +24,12 @@ export function VayuProvider({ children }) {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    // Clear previous city data immediately so stale values are never shown
+    setWeather(null);
+    setObservations([]);
+    setAlerts([]);
+    setForecasts([]);
+    setIntelligence(null);
     try {
       const coords = CITY_COORDS[city];
       const [w, obs, al, fc, intel] = await Promise.all([
@@ -33,11 +39,12 @@ export function VayuProvider({ children }) {
         api.forecasts(city),
         api.intelligence(city),
       ]);
-      if (w)   setWeather(w);
-      if (obs) setObservations(obs);
-      if (al)  setAlerts(al);
-      if (fc)  setForecasts(fc);
-      if (intel) setIntelligence(intel);
+      // Always set, even if null — prevents stale data from old city
+      setWeather(w);
+      setObservations(obs || []);
+      setAlerts(al || []);
+      setForecasts(fc || []);
+      setIntelligence(intel);
       setLastUpdated(new Date());
     } finally {
       setLoading(false);
