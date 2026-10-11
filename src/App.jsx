@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { VayuProvider } from './context/VayuContext';
 import Dashboard from './pages/Dashboard';
 import LiveTelemetry from './pages/LiveTelemetry';
@@ -18,6 +18,8 @@ function App() {
           <Route path="/sources"     element={<PollutionSource />} />
           <Route path="/alerts"      element={<Alerts />} />
           <Route path="/transparency" element={<Transparency />} />
+          {/* Catch-all: redirect unknown paths to the dashboard */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </VayuProvider>

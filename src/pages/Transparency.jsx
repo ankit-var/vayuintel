@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 
@@ -252,7 +251,7 @@ export default function Transparency() {
 
 <div className="rounded-xl overflow-hidden shadow-sm bg-surface-container">
 <div className="relative w-full h-36">
-<img className="w-full h-full object-cover" data-alt="High precision meteorological air quality measurement station in New Delhi at dawn, with continuous ambient sensors, solar panels, and scientific telemetry antennas under clear morning light in forest green and metallic tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO-ivoToTZvE4pyFoMjW1RQyhYCj0jOzsxyIWjDUS43FXcOJlgN83APEYRSM5gIj4Oa8ORq9jDqbE806p9SucxqDzXTfK9mB8uabT8QHZ4SGnXdz7YTHeJwJjHS6BGkSmVPU_6rzJWBTrKrgiQ5jyjEQOShFmRoajQGHbdEuwjwFwXNGp_ayM9XR-y-A46HVOopVl-Cy-g03n-ZHkcDnnlxlUx01GlJ-iwkr2MLTTkz3vm2DJ4PJrT"/>
+<img className="w-full h-full object-cover" alt="High precision meteorological air quality measurement station in New Delhi at dawn, with continuous ambient sensors, solar panels, and scientific telemetry antennas under clear morning light in forest green and metallic tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO-ivoToTZvE4pyFoMjW1RQyhYCj0jOzsxyIWjDUS43FXcOJlgN83APEYRSM5gIj4Oa8ORq9jDqbE806p9SucxqDzXTfK9mB8uabT8QHZ4SGnXdz7YTHeJwJjHS6BGkSmVPU_6rzJWBTrKrgiQ5jyjEQOShFmRoajQGHbdEuwjwFwXNGp_ayM9XR-y-A46HVOopVl-Cy-g03n-ZHkcDnnlxlUx01GlJ-iwkr2MLTTkz3vm2DJ4PJrT"/>
 <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent flex items-end p-space-md">
 <div className="flex items-center justify-between w-full text-on-primary">
 <div>

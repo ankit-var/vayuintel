@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from "react";
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -367,7 +367,7 @@ export default function LiveTelemetry() {
 
                           <div className="text-[10px] text-gray-400 flex items-center justify-between">
                             <span>Lat {st.coordinates[0].toFixed(3)}, Lon {st.coordinates[1].toFixed(3)}</span>
-                            <span>{new Date(st.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{st.timestamp ? new Date(st.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
                           </div>
                         </div>
                       </Popup>
@@ -423,7 +423,7 @@ export default function LiveTelemetry() {
                   <span className="text-on-surface-variant">·</span>
                   <span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant flex items-center gap-0.5">
                     <span className="material-symbols-outlined text-[12px] text-secondary">schedule</span> 
-                    Updated {selectedStation ? new Date(selectedStation.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Live'}
+                    Updated {selectedStation?.timestamp ? new Date(selectedStation.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Live'}
                   </span>
                 </div>
               </div>
@@ -623,7 +623,7 @@ export default function LiveTelemetry() {
                           <span className="font-telemetry-meta text-[11px] text-on-surface-variant">ID: {st.id}</span>
                           <span className="text-on-surface-variant">·</span>
                           <span className="font-telemetry-meta text-[11px] text-secondary flex items-center gap-0.5">
-                            <span className="material-symbols-outlined text-[12px]">schedule</span> Live {new Date(st.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                            <span className="material-symbols-outlined text-[12px]">schedule</span> Live {st.timestamp ? new Date(st.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
                           </span>
                         </div>
                       </div>

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import { useState } from "react";
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import { useVayu } from '../context/VayuContext';
@@ -7,8 +7,15 @@ import { useVayu } from '../context/VayuContext';
 export default function Alerts() {
   const { alerts, loading, city } = useVayu();
   const criticalAlert = alerts?.find(a => a.severity === 'CRITICAL' && !a.is_predicted);
-  const predictedAlert = alerts?.find(a => a.severity === 'CRITICAL' && a.is_predicted);
   const allAlerts = alerts || [];
+  // C-1: Advisory tab state
+  const [activeTab, setActiveTab] = useState('citizens');
+  // C-2: Exposure slider state
+  const [sliderMinutes, setSliderMinutes] = useState(45);
+  // Approximate: inhaled µg = ambient PM2.5 conc * minutes * lung deposition factor
+  const ambientPm25 = 188; // demo value (µg/m³)
+  const inhaledMcg = Math.round(ambientPm25 * sliderMinutes * 0.034);
+  const cigEq = (inhaledMcg / 156).toFixed(1); // 1 cigarette ≈ 156 µg retained PM2.5
   return (
     <>
       <AppHeader pageTitle="Advisories" />
@@ -73,7 +80,7 @@ export default function Alerts() {
 <span className="font-label-sm text-label-sm uppercase tracking-wider font-bold">Active Alert · {criticalAlert.data_source}</span>
 </div>
 <span className="font-telemetry-meta text-telemetry-meta text-on-error-container opacity-80 flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">schedule</span> Active until {new Date(criticalAlert.active_until).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}
+<span className="material-symbols-outlined text-[14px]">schedule</span> Active until {criticalAlert.active_until ? new Date(criticalAlert.active_until).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : 'Ongoing'}
       </span>
 </div>
 <div className="flex flex-col gap-1 z-10">
@@ -117,7 +124,7 @@ export default function Alerts() {
 )}
 
 <div className="relative rounded-xl overflow-hidden shadow-sm h-32 bg-surface-container">
-<img className="w-full h-full object-cover" data-alt="Dense atmospheric haze and winter smog blanket over urban city road infrastructure in Delhi NCR during dawn, dramatic streetlights penetrating deep aerosol haze, environmental intelligence surveillance viewpoint, documentary photojournalism style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwPJ4IJ891QwFi29fAbh9n6e8S2S7l6ypm4ebbroGwUR6UvTI6nSNetJzzP2hu7CtrtHVD3waIFLkeJ2bs5J7LrWNbUT0wvUTOHVQh38QHjY8_Uq3AUAz3j6ubzd6KcifE1em30Zq-lM_nn3_MgB--x4dQngvIhuyy_XbXsIHFm98ZLBstqOFlw84UmKEuFNiOLq1JF4ecspelr32gcMXG1PyQAEo3mwFo_LkhE19EFOY92cCJkPFx"/>
+<img className="w-full h-full object-cover" alt="Dense atmospheric haze and winter smog blanket over urban city road infrastructure in Delhi NCR during dawn, dramatic streetlights penetrating deep aerosol haze, environmental intelligence surveillance viewpoint, documentary photojournalism style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwPJ4IJ891QwFi29fAbh9n6e8S2S7l6ypm4ebbroGwUR6UvTI6nSNetJzzP2hu7CtrtHVD3waIFLkeJ2bs5J7LrWNbUT0wvUTOHVQh38QHjY8_Uq3AUAz3j6ubzd6KcifE1em30Zq-lM_nn3_MgB--x4dQngvIhuyy_XbXsIHFm98ZLBstqOFlw84UmKEuFNiOLq1JF4ecspelr32gcMXG1PyQAEo3mwFo_LkhE19EFOY92cCJkPFx"/>
 <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/30 to-transparent flex items-end p-3">
 <div className="flex items-center justify-between w-full">
 <span className="font-label-sm text-label-sm text-on-primary font-medium flex items-center gap-1">
@@ -140,21 +147,37 @@ export default function Alerts() {
 </div>
 
 <div className="flex overflow-x-auto gap-1 bg-surface-container p-1 rounded-xl scrollbar-none" id="advisoryTabs" role="tablist">
-<button className="advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-semibold transition-all duration-150 bg-primary text-on-primary shadow-sm" data-target="panel-citizens">
+<button
+  role="tab"
+  aria-selected={activeTab === 'citizens'}
+  onClick={() => setActiveTab('citizens')}
+  className={`advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-semibold transition-all duration-150 ${activeTab === 'citizens' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
         Citizens &amp; Families
       </button>
-<button className="advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all duration-150" data-target="panel-workers">
+<button
+  role="tab"
+  aria-selected={activeTab === 'workers'}
+  onClick={() => setActiveTab('workers')}
+  className={`advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 ${activeTab === 'workers' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
         Outdoor &amp; Police
       </button>
-<button className="advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all duration-150" data-target="panel-schools">
+<button
+  role="tab"
+  aria-selected={activeTab === 'schools'}
+  onClick={() => setActiveTab('schools')}
+  className={`advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 ${activeTab === 'schools' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
         Schools &amp; Labs
       </button>
-<button className="advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all duration-150" data-target="panel-municipal">
+<button
+  role="tab"
+  aria-selected={activeTab === 'municipal'}
+  onClick={() => setActiveTab('municipal')}
+  className={`advisory-tab flex-1 whitespace-nowrap min-w-max px-3 py-2 rounded-lg font-label-md text-label-md font-medium transition-all duration-150 ${activeTab === 'municipal' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>
         Municipal (DPCC)
       </button>
 </div>
 
-<div className="advisory-panel flex flex-col gap-2.5" id="panel-citizens">
+<div className={`advisory-panel ${activeTab === 'citizens' ? 'flex' : 'hidden'} flex-col gap-2.5`} id="panel-citizens" role="tabpanel">
 
 <div className="flex items-start gap-3 p-space-sm bg-surface-container-lowest rounded-xl shadow-sm">
 <div className="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 text-primary">
@@ -202,7 +225,7 @@ export default function Alerts() {
 </div>
 </div>
 
-<div className="advisory-panel hidden flex-col gap-2.5" id="panel-workers">
+<div className={`advisory-panel ${activeTab === 'workers' ? 'flex' : 'hidden'} flex-col gap-2.5`} id="panel-workers" role="tabpanel">
 
 <div className="flex items-start gap-3 p-space-sm bg-surface-container-lowest rounded-xl shadow-sm">
 <div className="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 text-primary">
@@ -235,7 +258,7 @@ export default function Alerts() {
 </div>
 </div>
 
-<div className="advisory-panel hidden flex-col gap-2.5" id="panel-schools">
+<div className={`advisory-panel ${activeTab === 'schools' ? 'flex' : 'hidden'} flex-col gap-2.5`} id="panel-schools" role="tabpanel">
 
 <div className="flex items-start gap-3 p-space-sm bg-surface-container-lowest rounded-xl shadow-sm">
 <div className="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 text-error">
@@ -268,7 +291,7 @@ export default function Alerts() {
 </div>
 </div>
 
-<div className="advisory-panel hidden flex-col gap-2.5" id="panel-municipal">
+<div className={`advisory-panel ${activeTab === 'municipal' ? 'flex' : 'hidden'} flex-col gap-2.5`} id="panel-municipal" role="tabpanel">
 
 <div className="flex items-start gap-3 p-space-sm bg-surface-container-lowest rounded-xl shadow-sm">
 <div className="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 text-secondary">
@@ -334,9 +357,16 @@ export default function Alerts() {
 <div className="flex flex-col gap-1 mt-1">
 <div className="flex items-center justify-between font-label-sm text-label-sm text-on-surface">
 <span>Outdoor Duration</span>
-<span className="font-telemetry-num text-[16px] text-primary font-bold" id="sliderValLabel">45 Mins</span>
+<span className="font-telemetry-num text-[16px] text-primary font-bold">{sliderMinutes} Mins</span>
 </div>
-<input className="w-full accent-primary h-2 bg-surface-container rounded-lg cursor-pointer" id="exposureSlider" max="180" min="15" step="15" type="range" value="45"/>
+<input
+  className="w-full accent-primary h-2 bg-surface-container rounded-lg cursor-pointer"
+  id="exposureSlider"
+  max="180" min="15" step="15"
+  type="range"
+  value={sliderMinutes}
+  onChange={e => setSliderMinutes(Number(e.target.value))}
+/>
 <div className="flex justify-between font-telemetry-meta text-telemetry-meta text-on-surface-variant">
 <span>15m Quick Run</span>
 <span>60m Commute</span>
@@ -347,11 +377,11 @@ export default function Alerts() {
 <div className="flex items-center justify-between p-2 rounded-lg bg-surface-container-lowest mt-1">
 <div className="flex flex-col">
 <span className="font-label-sm text-label-sm text-on-surface-variant">Estimated PM2.5 Inhaled</span>
-<span className="font-telemetry-num text-[18px] font-bold text-error" id="calculatedInhale">~ 285 µg</span>
+<span className="font-telemetry-num text-[18px] font-bold text-error">~ {inhaledMcg} µg</span>
 </div>
 <div className="flex flex-col items-end">
 <span className="font-label-sm text-label-sm text-on-surface-variant">Cigarette Equivalence</span>
-<span className="font-telemetry-num text-[18px] font-bold text-on-surface" id="cigaretteEq">~ 1.8 Cigs</span>
+<span className="font-telemetry-num text-[18px] font-bold text-on-surface">~ {cigEq} Cigs</span>
 </div>
 </div>
 </div>
@@ -439,9 +469,9 @@ export default function Alerts() {
 <span className="font-telemetry-meta text-telemetry-meta text-on-surface-variant">Report illegal waste fires: 1800-180-1717</span>
 </div>
 </div>
-<button className="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1 shadow-sm">
+<a href="tel:18001801717" className="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1 shadow-sm">
 <span className="material-symbols-outlined text-[14px]">call</span> Dial
-    </button>
+    </a>
 </div>
 
 <div className="flex items-start gap-2 p-3 rounded-lg bg-surface-container-low text-on-surface-variant">

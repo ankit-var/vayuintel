@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import LiveWeatherBar from '../components/LiveWeatherBar';
@@ -115,11 +114,11 @@ export default function Forecast() {
 </defs>
 
 <line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="30" y2="30" />
-<text fill="#ba1a1a" font-family="JetBrains Mono" font-size="7" x="12" y="27">400 Severe</text>
+<text fill="#ba1a1a" fontFamily="JetBrains Mono" fontSize="7" x="12" y="27">400 Severe</text>
 <line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="75" y2="75" />
-<text fill="#707974" font-family="JetBrains Mono" font-size="7" x="12" y="72">300 Very Poor</text>
+<text fill="#707974" fontFamily="JetBrains Mono" fontSize="7" x="12" y="72">300 Very Poor</text>
 <line stroke="#d3e4fe" strokeDasharray="2 3" strokeWidth="0.7" x1="10" x2="350" y1="120" y2="120" />
-<text fill="#707974" font-family="JetBrains Mono" font-size="7" x="12" y="117">200 Moderate</text>
+<text fill="#707974" fontFamily="JetBrains Mono" fontSize="7" x="12" y="117">200 Moderate</text>
 
 <polygon fill="url(#uncertaintyGradient)" points="
           90,62

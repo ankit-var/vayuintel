@@ -1,4 +1,3 @@
-import React from 'react';
 import { useVayu } from '../context/VayuContext';
 
 /**
@@ -8,7 +7,7 @@ import { useVayu } from '../context/VayuContext';
 export default function LiveWeatherBar() {
   const { weather } = useVayu();
 
-  if (!weather || weather.temperature === null) {
+  if (!weather || weather.temperature == null) {
     return null; // hide when backend is offline
   }
 

@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import LiveWeatherBar from '../components/LiveWeatherBar';
@@ -335,7 +334,7 @@ export default function Dashboard() {
 
 <div className="bg-surface-container-lowest rounded-xl p-3 shadow-sm flex items-center gap-3">
 <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
-<img className="w-full h-full object-cover" data-alt="Dense atmospheric haze over India Gate Delhi in soft amber morning light, low contrast horizon with high particulate smog dispersion, cinematic photojournalistic documentary style with subtle cool green and teal ambient tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQwy651i0YJvFjWFofqrAPcGld8TKVArAv71g0sMT40NEKPIZgkSiF2UPt9aaHdrz_ibGF_IYXSVcPKVkpYeoui-rkg_di2DzogDtruDT53bbXab-5luYmhccAOnXoS-JPmtEyyK1B8xtuES--DgBRO0Kou43iCb9guRii_4acpNwfnHaF5DoYvtOzlV8GYt3RbWVmYK55-uv-1V37PMCyYVNqxhrTcLDGW29ukJam_eT9LKVWArLa"/>
+<img className="w-full h-full object-cover" alt="Dense atmospheric haze over India Gate Delhi in soft amber morning light, low contrast horizon with high particulate smog dispersion, cinematic photojournalistic documentary style with subtle cool green and teal ambient tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQwy651i0YJvFjWFofqrAPcGld8TKVArAv71g0sMT40NEKPIZgkSiF2UPt9aaHdrz_ibGF_IYXSVcPKVkpYeoui-rkg_di2DzogDtruDT53bbXab-5luYmhccAOnXoS-JPmtEyyK1B8xtuES--DgBRO0Kou43iCb9guRii_4acpNwfnHaF5DoYvtOzlV8GYt3RbWVmYK55-uv-1V37PMCyYVNqxhrTcLDGW29ukJam_eT9LKVWArLa"/>
 </div>
 <div className="flex flex-col justify-center min-w-0">
 <span className="font-label-sm text-label-sm text-secondary font-semibold uppercase tracking-wider">Atmospheric Horizon</span>

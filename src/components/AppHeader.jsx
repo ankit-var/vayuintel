@@ -1,4 +1,3 @@
-import React from 'react';
 import { useVayu } from '../context/VayuContext';
 
 /**

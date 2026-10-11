@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import { useVayu } from '../context/VayuContext';
@@ -231,7 +230,7 @@ export default function PollutionSource() {
 </div>
 
 <div className="rounded-lg overflow-hidden bg-surface-container relative">
-<div className="relative w-full h-36 bg-cover bg-center" data-alt="High resolution scientific satellite multispectral false-color thermal scan showing agricultural fields in northern India with small red heat anomaly points and atmospheric haze drifting south-eastward over a topographic map outline, in analytical teal and deep green tones." style={{"backgroundImage":"url('https://lh3.googleusercontent.com/aida-public/AB6AXuBQHsjhynp2Ab5fGJ6Tt6cRhJndyTUvCY5Qp_wQ0SQMJyN-QyT6pBJRl9wKbq8H7GVkVpbjqH-idcnNV2ACtTXm4GBtyvNdvypMespfxQIyKL8xqQNDIYSVWwxzM9XG-ho7uC0lMzq7cF6eSqAA-3lk3VmJQGgcMEJGF1HI5sNzLpD_fOO2siASEPgorIK27RIkhMvoIq6zzsFSYM00tPiIbcoukyvyMCiXsI7wiQTCtOsp9P7Gg73l')"}}>
+<div className="relative w-full h-36 bg-cover bg-center" role="img" aria-label="High resolution scientific satellite multispectral false-color thermal scan showing agricultural fields in northern India with small red heat anomaly points and atmospheric haze drifting south-eastward over a topographic map outline, in analytical teal and deep green tones." style={{"backgroundImage":"url('https://lh3.googleusercontent.com/aida-public/AB6AXuBQHsjhynp2Ab5fGJ6Tt6cRhJndyTUvCY5Qp_wQ0SQMJyN-QyT6pBJRl9wKbq8H7GVkVpbjqH-idcnNV2ACtTXm4GBtyvNdvypMespfxQIyKL8xqQNDIYSVWwxzM9XG-ho7uC0lMzq7cF6eSqAA-3lk3VmJQGgcMEJGF1HI5sNzLpD_fOO2siASEPgorIK27RIkhMvoIq6zzsFSYM00tPiIbcoukyvyMCiXsI7wiQTCtOsp9P7Gg73l')"}}>
 <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent flex items-end p-3">
 <span className="font-telemetry-meta text-telemetry-meta text-on-primary">Upwind Punjab/Haryana Orbital Buffer: 150 km Radius</span>
 </div>
